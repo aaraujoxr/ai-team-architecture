@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Team Architecture — Reya Network</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --black: #0A0A0A;
+    --dark-card: #141414;
+    --green: #00DC82;
+    --green-dim: #00B368;
+    --green-glow: rgba(0, 220, 130, 0.12);
+    --white: #FFFFFF;
+    --off-white: #F5F5F5;
+    --gray-90: #E5E5E5;
+    --gray-70: #B3B3B3;
+    --gray-50: #808080;
+    --gray-40: #666666;
+    --gray-20: #333333;
+    --gray-15: #262626;
+    --red: #EF4444;
+    --teal: #14B8A6;
+    --purple: #8B5CF6;
+    --amber: #F59E0B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--black);
+    color: var(--white);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5vh 8vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Backgrounds */
+  .bg-dark { background: var(--black); }
+  .bg-light {
+    background: var(--off-white);
+    color: var(--black);
+  }
+
+  /* Typography */
+  .label {
+    font-size: clamp(10px, 1.1vw, 14px);
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 0.8em;
+  }
+
+  .bg-light .label { color: var(--green-dim); }
+
+  h1 {
+    font-size: clamp(32px, 4.5vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4em;
+  }
+
+  h2 {
+    font-size: clamp(24px, 3.2vw, 52px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5em;
+  }
+
+  .subtitle {
+    font-size: clamp(14px, 1.6vw, 22px);
+    font-weight: 400;
+    color: var(--gray-70);
+    line-height: 1.55;
+    max-width: 42em;
+  }
+
+  .bg-light .subtitle { color: var(--gray-50); }
+
+  .green { color: var(--green); }
+  .teal { color: var(--teal); }
+  .red { color: var(--red); }
+  .purple { color: var(--purple); }
+  .amber { color: var(--amber); }
+  .muted { color: var(--gray-50); }
+  .light-muted { color: var(--gray-70); }
+
+  .footnote {
+    font-size: clamp(11px, 1vw, 14px);
+    color: var(--gray-50);
+    font-style: italic;
+    position: absolute;
+    bottom: 4vh;
+    left: 8vw;
+    right: 8vw;
+  }
+
+  .bg-light .footnote { color: var(--gray-50); }
+
+  /* Cards grid */
+  .cards {
+    display: flex;
+    gap: clamp(12px, 1.5vw, 24px);
+    margin-top: clamp(16px, 2.5vh, 32px);
+  }
+
+  .card {
+    flex: 1;
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+    padding: clamp(20px, 2.5vw, 36px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bg-light .card {
+    background: var(--white);
+    border: 1px solid var(--gray-90);
+  }
+
+  .card.accent-green { border-color: var(--green); }
+  .card.accent-teal { border-color: var(--teal); }
+  .card.accent-purple { border-color: var(--purple); }
+  .card.accent-red { border-color: var(--red); }
+  .card.accent-amber { border-color: var(--amber); }
+
+  .card-label {
+    font-size: clamp(9px, 0.9vw, 12px);
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1em;
+    color: var(--gray-50);
+  }
+
+  .card-label.green { color: var(--green); }
+  .card-label.teal { color: var(--teal); }
+  .card-label.purple { color: var(--purple); }
+  .card-label.red { color: var(--red); }
+  .card-label.amber { color: var(--amber); }
+
+  .card-title {
+    font-size: clamp(15px, 1.5vw, 20px);
+    font-weight: 700;
+    margin-bottom: 0.6em;
+  }
+
+  .card-body {
+    font-size: clamp(12px, 1.1vw, 15px);
+    color: var(--gray-70);
+    line-height: 1.65;
+  }
+
+  .bg-light .card-body { color: var(--gray-50); }
+
+  .card-num {
+    font-size: clamp(22px, 2.5vw, 36px);
+    font-weight: 800;
+    margin-bottom: 0.4em;
+    display: flex;
+    align-items: baseline;
+    gap: 0.1em;
+  }
+
+  /* Big statement */
+  .big-statement {
+    font-size: clamp(20px, 2.8vw, 44px);
+    font-weight: 700;
+    line-height: 1.25;
+    max-width: 20em;
+  }
+
+  .big-statement .dim {
+    color: var(--gray-40);
+  }
+
+  /* Bullet list */
+  .bullet-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .bullet-list li {
+    font-size: clamp(12px, 1.1vw, 15px);
+    color: var(--gray-70);
+    line-height: 1.5;
+    padding: 0.35em 0;
+    padding-left: 1.5em;
+    position: relative;
+  }
+
+  .bullet-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.7em;
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+  }
+
+  /* Diagram elements */
+  .diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 2vw, 32px);
+    margin: clamp(20px, 4vh, 48px) 0;
+    flex-wrap: wrap;
+  }
+
+  .dia-box {
+    padding: clamp(12px, 1.5vw, 24px) clamp(16px, 2vw, 32px);
+    border: 1px solid var(--gray-20);
+    background: var(--dark-card);
+    font-weight: 600;
+    font-size: clamp(13px, 1.2vw, 17px);
+    text-align: center;
+    min-width: clamp(80px, 10vw, 140px);
+  }
+
+  .dia-box.filled-green {
+    background: var(--green);
+    color: var(--black);
+    border-color: var(--green);
+    font-size: clamp(18px, 2vw, 28px);
+    font-weight: 800;
+    padding: clamp(16px, 2.5vw, 36px) clamp(24px, 3vw, 48px);
+  }
+
+  .dia-arrow {
+    font-size: clamp(16px, 1.8vw, 24px);
+    color: var(--gray-40);
+  }
+
+  /* Flow row */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 1.2vw, 20px);
+    margin: clamp(16px, 3vh, 36px) 0;
+  }
+
+  .flow-box {
+    padding: clamp(10px, 1.2vw, 18px) clamp(14px, 1.8vw, 28px);
+    border: 1px solid var(--gray-20);
+    background: var(--dark-card);
+    font-size: clamp(12px, 1.1vw, 16px);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .flow-box.green-fill {
+    background: var(--green);
+    color: var(--black);
+    border-color: var(--green);
+  }
+
+  .flow-box .sub {
+    font-size: 0.85em;
+    font-weight: 400;
+    color: var(--gray-70);
+    margin-top: 0.3em;
+  }
+
+  .flow-arrow {
+    font-size: clamp(16px, 1.6vw, 22px);
+    color: var(--gray-50);
+  }
+
+  /* Code block */
+  .code-block {
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+    padding: clamp(16px, 2vw, 32px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(11px, 1.05vw, 15px);
+    line-height: 1.7;
+    color: var(--gray-70);
+    margin: clamp(12px, 2vh, 24px) 0;
+    overflow-x: auto;
+    white-space: pre;
+    max-width: 100%;
+  }
+
+  .code-block .dir { color: var(--green); font-weight: 600; }
+  .code-block .dev-dir { color: var(--teal); font-weight: 600; }
+  .code-block .audit-dir { color: var(--red); font-weight: 600; }
+  .code-block .comment { color: var(--gray-40); font-style: italic; }
+
+  /* Stage progression */
+  .stages {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.2vh, 16px);
+    margin: clamp(16px, 3vh, 36px) 0;
+    max-width: 52em;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 1.5vw, 24px);
+    padding: clamp(14px, 1.5vw, 22px) clamp(18px, 2vw, 28px);
+    border: 1px solid var(--gray-20);
+    background: var(--dark-card);
+  }
+
+  .stage-num {
+    font-size: clamp(14px, 1.5vw, 22px);
+    font-weight: 800;
+    min-width: 1.8em;
+  }
+
+  .stage-title {
+    font-size: clamp(13px, 1.2vw, 17px);
+    font-weight: 700;
+    min-width: 8em;
+  }
+
+  .stage-desc {
+    font-size: clamp(12px, 1.05vw, 15px);
+    color: var(--gray-70);
+    flex: 1;
+  }
+
+  .stage.active-stage {
+    border-color: var(--green);
+    background: rgba(0, 220, 130, 0.06);
+  }
+
+  .stage.future-stage {
+    border-color: var(--gray-20);
+    opacity: 0.55;
+  }
+
+  .stage-marker {
+    font-size: clamp(9px, 0.8vw, 11px);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.25em 0.8em;
+    white-space: nowrap;
+  }
+
+  /* Session flow */
+  .session-steps {
+    display: flex;
+    gap: clamp(8px, 1vw, 16px);
+    margin: clamp(16px, 3vh, 36px) 0;
+  }
+
+  .session-step {
+    flex: 1;
+    padding: clamp(16px, 2vw, 28px);
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6em;
+  }
+
+  .session-step-num {
+    font-size: clamp(9px, 0.85vw, 11px);
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+
+  .session-step-title {
+    font-size: clamp(15px, 1.4vw, 19px);
+    font-weight: 700;
+  }
+
+  .session-step-desc {
+    font-size: clamp(11px, 1vw, 14px);
+    color: var(--gray-70);
+    line-height: 1.55;
+  }
+
+  /* Principle blocks */
+  .principles {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(12px, 1.5vh, 20px);
+    margin: clamp(16px, 2.5vh, 32px) 0;
+    max-width: 52em;
+  }
+
+  .principle {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(14px, 1.8vw, 24px);
+    padding: clamp(16px, 2vw, 28px);
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+  }
+
+  .principle-icon {
+    font-size: clamp(20px, 2.2vw, 32px);
+    font-weight: 800;
+    min-width: 1.6em;
+    text-align: center;
+    line-height: 1;
+    padding-top: 0.1em;
+  }
+
+  .principle-content {
+    flex: 1;
+  }
+
+  .principle-title {
+    font-size: clamp(14px, 1.3vw, 18px);
+    font-weight: 700;
+    margin-bottom: 0.3em;
+  }
+
+  .principle-desc {
+    font-size: clamp(12px, 1.05vw, 15px);
+    color: var(--gray-70);
+    line-height: 1.55;
+  }
+
+  .principle-sub {
+    font-size: clamp(11px, 0.95vw, 13px);
+    color: var(--gray-50);
+    margin-top: 0.5em;
+    font-style: italic;
+  }
+
+  /* Router diagram */
+  .router-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto auto;
+    gap: clamp(12px, 1.5vw, 20px);
+    align-items: center;
+    justify-items: center;
+    margin: clamp(16px, 3vh, 36px) auto;
+    max-width: 700px;
+  }
+
+  .router-center {
+    grid-row: 1 / 3;
+    grid-column: 2;
+  }
+
+  .router-left {
+    grid-row: 1 / 3;
+    grid-column: 1;
+  }
+
+  .router-right-top {
+    grid-row: 1;
+    grid-column: 3;
+  }
+
+  .router-right-bottom {
+    grid-row: 2;
+    grid-column: 3;
+  }
+
+  /* Setup cards */
+  .setup-row {
+    display: flex;
+    align-items: center;
+    background: var(--white);
+    border: 1px solid var(--gray-90);
+    padding: clamp(14px, 1.8vw, 24px);
+    margin: clamp(6px, 0.8vh, 10px) 0;
+    gap: clamp(12px, 2vw, 24px);
+  }
+
+  .setup-accent {
+    width: 4px;
+    height: clamp(32px, 3.5vh, 48px);
+    flex-shrink: 0;
+  }
+
+  .setup-num {
+    font-size: clamp(18px, 2vw, 28px);
+    font-weight: 800;
+    min-width: 2em;
+  }
+
+  .setup-role {
+    font-size: clamp(14px, 1.3vw, 18px);
+    font-weight: 700;
+    color: var(--black);
+    min-width: 10em;
+  }
+
+  .setup-tool {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(12px, 1.1vw, 15px);
+    font-weight: 600;
+    min-width: 9em;
+  }
+
+  .setup-reason {
+    font-size: clamp(12px, 1.05vw, 14px);
+    color: var(--gray-50);
+    flex: 1;
+  }
+
+  /* Git analogy */
+  .analogy-block {
+    border-left: 3px solid var(--green);
+    padding: clamp(16px, 2vw, 28px) clamp(20px, 2.5vw, 36px);
+    background: var(--green-glow);
+    margin: clamp(16px, 2.5vh, 32px) 0;
+    max-width: 44em;
+  }
+
+  .analogy-text {
+    font-size: clamp(15px, 1.5vw, 21px);
+    line-height: 1.6;
+    color: var(--gray-70);
+  }
+
+  .analogy-text strong {
+    color: var(--white);
+    font-weight: 600;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 2.5vh;
+    right: 4vw;
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    z-index: 100;
+  }
+
+  .nav-counter {
+    font-size: clamp(11px, 1vw, 13px);
+    color: var(--gray-40);
+    font-variant-numeric: tabular-nums;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .nav-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--gray-20);
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+  }
+
+  .nav-dot.active {
+    background: var(--green);
+    transform: scale(1.4);
+  }
+
+  /* Progress bar */
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--green);
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .slide { padding: 4vh 6vw; }
+    .cards { flex-direction: column; }
+    .router-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+    .router-center { grid-row: auto; grid-column: auto; }
+    .router-left { grid-row: auto; grid-column: auto; }
+    .router-right-top { grid-row: auto; grid-column: auto; }
+    .router-right-bottom { grid-row: auto; grid-column: auto; }
+    .flow-row { flex-wrap: wrap; justify-content: center; }
+    .setup-row { flex-wrap: wrap; }
+    .session-steps { flex-direction: column; }
+    .stages .stage { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide bg-dark active" data-slide="0">
+    <div style="margin-bottom: auto;"></div>
+    <div class="label">REYA NETWORK</div>
+    <h1>AI Team<br>Architecture</h1>
+    <p class="subtitle">
+      <span class="green" style="font-weight:600;">Agents as team members</span>, not repo tools.
+    </p>
+    <div style="margin-top: auto;"></div>
+    <p style="font-size: clamp(10px, 0.9vw, 12px); color: var(--gray-40); letter-spacing: 0.2em; text-transform: uppercase;">
+      Quant Team &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; <a href="ai_team_architecture_reference.html" style="color: var(--green); text-decoration: none; letter-spacing: 0.15em;">Full Reference ↗</a>
+    </p>
+  </div>
+
+  <!-- SLIDE 2: The Default -->
+  <div class="slide bg-dark" data-slide="1">
+    <div class="label">THE DEFAULT</div>
+    <h2>What repo-scoped agents give you</h2>
+    <p class="subtitle" style="margin-bottom: clamp(16px, 2.5vh, 28px);">
+      Open a repo. Start a session. The agent reasons about architecture, writes code, catches bugs. Within that scope, it's genuinely capable.
+    </p>
+    <div class="cards" style="max-width: 52em;">
+      <div class="card">
+        <div class="card-title" style="color: var(--gray-70);">But it's bounded</div>
+        <div class="card-body">
+          One repo. One session. One cognitive mode at a time. It knows the code but not the work — not what phase you're in, not what was tried before, not how you think.
+        </div>
+      </div>
+      <div class="card" style="border-color: var(--gray-40);">
+        <div class="card-title" style="color: var(--gray-70);">This works. Until —</div>
+        <div class="card-body">
+          You need coordination across repos. Persistent knowledge across sessions. Rigor that doesn't degrade as alignment deepens.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: The Insight -->
+  <div class="slide bg-dark" data-slide="2">
+    <div class="label">THE SHIFT</div>
+    <p class="big-statement">
+      The difference between a tool and a team member is <span class="green">state</span>.
+    </p>
+    <p class="subtitle" style="margin-top: clamp(20px, 3vh, 36px); max-width: 38em;">
+      A repo-scoped agent is stateless relative to the team. It knows the code but not the work. A role-scoped agent carries coordination state, accumulated knowledge, and context about you. Each session builds on the last.
+    </p>
+    <p class="footnote">Scope the agent to a role, not a repo. Everything else follows.</p>
+  </div>
+
+  <!-- SLIDE 4: Three Benefits -->
+  <div class="slide bg-dark" data-slide="3">
+    <div class="label">WHAT CHANGES</div>
+    <h2>Three structural benefits</h2>
+    <div class="cards">
+      <div class="card accent-green">
+        <div class="card-label green">01</div>
+        <div class="card-title">Knowledge compounds</div>
+        <div class="card-body">
+          Cross-cutting patterns, failure modes, integration conventions — accumulated across sessions and repos. The agent gets smarter over time.
+        </div>
+      </div>
+      <div class="card accent-teal">
+        <div class="card-label teal">02</div>
+        <div class="card-title">Context doesn't collapse</div>
+        <div class="card-body">
+          Separate functions get separate context boundaries. Deep alignment for design. Fresh eyes for review. No single session holds all modes at once.
+        </div>
+      </div>
+      <div class="card accent-purple">
+        <div class="card-label purple">03</div>
+        <div class="card-title">Coordination scales</div>
+        <div class="card-body">
+          A shared filesystem becomes the protocol. Specs, findings, reports — all files on disk. Observable, auditable, persistent. Nothing hidden in expired sessions.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: The Git Analogy -->
+  <div class="slide bg-dark" data-slide="4">
+    <div class="label">WHY THIS WORKS</div>
+    <h2>The git parallel</h2>
+    <div class="analogy-block">
+      <p class="analogy-text">
+        You <em>could</em> achieve all three manually. Maintain markdown files. Copy context into each session. Relay status between roles by hand.
+      </p>
+    </div>
+    <p class="subtitle" style="max-width: 44em; margin-bottom: clamp(12px, 1.5vh, 20px);">
+      People did this with version control too. <strong style="color: var(--white);">Git didn't make version control possible — it made it systematic enough that it actually happens.</strong>
+    </p>
+    <p class="subtitle" style="max-width: 44em;">
+      This architecture does the same for agent coordination. Agents read the ledger because their instructions say to. They write knowledge back because the role definition includes it. <span class="green" style="font-weight: 600;">The discipline is structural, not aspirational.</span>
+    </p>
+  </div>
+
+  <!-- SLIDE 6: Three Principles -->
+  <div class="slide bg-dark" data-slide="5">
+    <div class="label">ARCHITECTURE</div>
+    <h2>Three principles</h2>
+    <div class="principles">
+      <div class="principle" style="border-color: var(--teal);">
+        <div class="principle-icon teal">⟷</div>
+        <div class="principle-content">
+          <div class="principle-title">Transversal coordination</div>
+          <div class="principle-desc">Agents share context across repo boundaries through a structured filesystem. Knowledge is stratified by where it's consumed.</div>
+          <div class="principle-sub">Role separation · Filesystem as protocol · Knowledge layering</div>
+        </div>
+      </div>
+      <div class="principle" style="border-color: var(--green);">
+        <div class="principle-icon green">◉</div>
+        <div class="principle-content">
+          <div class="principle-title">Statefulness</div>
+          <div class="principle-desc">Coordination requires dynamic state that evolves with the work. The ledger tracks where you are, what's active, what's blocked — not just what's been produced.</div>
+          <div class="principle-sub">Coordination state (the ledger)</div>
+        </div>
+      </div>
+      <div class="principle" style="border-color: var(--amber);">
+        <div class="principle-icon amber">⊕</div>
+        <div class="principle-content">
+          <div class="principle-title">Human coordination</div>
+          <div class="principle-desc">The human routes all information between roles and provides the context that makes every session productive. No agent-to-agent communication.</div>
+          <div class="principle-sub">Human as router · Collaboration context</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Architecture Map -->
+  <div class="slide bg-dark" data-slide="6">
+    <div class="label">THE BIG PICTURE</div>
+    <h2>How it fits together</h2>
+
+    <div style="display: flex; flex-direction: column; align-items: center; margin-top: clamp(8px, 1.5vh, 16px); gap: 0; width: 100%; max-width: 56em; margin-left: auto; margin-right: auto;">
+
+      <!-- HUMAN LAYER -->
+      <div style="width: 100%; background: rgba(245, 158, 11, 0.06); border: 1px solid var(--amber); padding: clamp(14px, 1.5vw, 22px) clamp(18px, 2vw, 28px); display: flex; align-items: center; gap: clamp(16px, 2vw, 28px);">
+        <div style="min-width: clamp(80px, 9vw, 130px);">
+          <div style="font-size: clamp(9px, 0.85vw, 11px); font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--amber); margin-bottom: 0.3em;">HUMAN LAYER</div>
+          <div style="font-size: clamp(12px, 1.1vw, 15px); font-weight: 600; color: var(--white);">You (router)</div>
+        </div>
+        <div style="flex: 1; display: flex; gap: clamp(8px, 1vw, 14px);">
+          <div style="flex: 1; padding: clamp(8px, 0.8vw, 12px); background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); text-align: center;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 13px); color: var(--amber);">collaboration_context.md</div>
+            <div style="font-size: clamp(9px, 0.8vw, 11px); color: var(--gray-50); margin-top: 0.2em;">how you think & work</div>
+          </div>
+          <div style="flex: 1; padding: clamp(8px, 0.8vw, 12px); background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); text-align: center;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 13px); color: var(--amber);">routing_protocol.md</div>
+            <div style="font-size: clamp(9px, 0.8vw, 11px); color: var(--gray-50); margin-top: 0.2em;">what flows where</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector arrows -->
+      <div style="display: flex; width: 100%; justify-content: space-around; padding: 0 clamp(60px, 10vw, 140px);">
+        <div style="width: 2px; height: clamp(10px, 1.2vh, 16px); background: var(--gray-20);"></div>
+        <div style="width: 2px; height: clamp(10px, 1.2vh, 16px); background: var(--gray-20);"></div>
+        <div style="width: 2px; height: clamp(10px, 1.2vh, 16px); background: var(--gray-20);"></div>
+      </div>
+
+      <!-- COORDINATION LAYER -->
+      <div style="width: 100%; background: rgba(0, 220, 130, 0.06); border: 1px solid var(--green); padding: clamp(14px, 1.5vw, 22px) clamp(18px, 2vw, 28px); display: flex; align-items: center; gap: clamp(16px, 2vw, 28px);">
+        <div style="min-width: clamp(80px, 9vw, 130px);">
+          <div style="font-size: clamp(9px, 0.85vw, 11px); font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--green); margin-bottom: 0.3em;">STATE LAYER</div>
+          <div style="font-size: clamp(12px, 1.1vw, 15px); font-weight: 600; color: var(--white);">Coordination</div>
+        </div>
+        <div style="flex: 1; padding: clamp(10px, 1vw, 16px); background: rgba(0, 220, 130, 0.08); border: 1px solid rgba(0, 220, 130, 0.25); text-align: center;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(11px, 1vw, 14px); color: var(--green); font-weight: 600;">ledger.md</div>
+          <div style="font-size: clamp(10px, 0.9vw, 12px); color: var(--gray-50); margin-top: 0.2em;">all roles read · all roles write · evolves continuously</div>
+        </div>
+      </div>
+
+      <!-- Connector arrows -->
+      <div style="display: flex; width: 100%; justify-content: space-around; padding: 0 clamp(60px, 10vw, 140px);">
+        <div style="width: 2px; height: clamp(10px, 1.2vh, 16px); background: var(--gray-20);"></div>
+        <div style="width: 2px; height: clamp(10px, 1.2vh, 16px); background: var(--gray-20);"></div>
+        <div style="width: 2px; height: clamp(10px, 1.2vh, 16px); background: var(--gray-20);"></div>
+      </div>
+
+      <!-- AGENT LAYER -->
+      <div style="width: 100%; border: 1px solid var(--gray-20); padding: clamp(14px, 1.5vw, 22px) clamp(18px, 2vw, 28px); display: flex; align-items: flex-start; gap: clamp(16px, 2vw, 28px); background: var(--dark-card);">
+        <div style="min-width: clamp(80px, 9vw, 130px);">
+          <div style="font-size: clamp(9px, 0.85vw, 11px); font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-50); margin-bottom: 0.3em;">AGENT LAYER</div>
+          <div style="font-size: clamp(12px, 1.1vw, 15px); font-weight: 600; color: var(--white);">Roles</div>
+        </div>
+        <div style="flex: 1; display: flex; gap: clamp(8px, 1vw, 14px);">
+          <div style="flex: 1; padding: clamp(8px, 0.8vw, 12px); border: 1px solid rgba(0, 220, 130, 0.3); text-align: center;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 13px); color: var(--green); font-weight: 600;">role-a/</div>
+            <div style="font-size: clamp(9px, 0.8vw, 11px); color: var(--gray-50); margin-top: 0.3em; line-height: 1.4;">CLAUDE.md<br>knowledge/<br>outputs/</div>
+          </div>
+          <div style="flex: 1; padding: clamp(8px, 0.8vw, 12px); border: 1px solid rgba(20, 184, 166, 0.3); text-align: center;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 13px); color: var(--teal); font-weight: 600;">role-b/</div>
+            <div style="font-size: clamp(9px, 0.8vw, 11px); color: var(--gray-50); margin-top: 0.3em; line-height: 1.4;">CLAUDE.md<br>knowledge/<br>outputs/</div>
+          </div>
+          <div style="flex: 1; padding: clamp(8px, 0.8vw, 12px); border: 1px solid rgba(139, 92, 246, 0.3); text-align: center;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 13px); color: var(--purple); font-weight: 600;">role-n/</div>
+            <div style="font-size: clamp(9px, 0.8vw, 11px); color: var(--gray-50); margin-top: 0.3em; line-height: 1.4;">CLAUDE.md<br>knowledge/<br>outputs/</div>
+          </div>
+          <div style="flex: 1; padding: clamp(8px, 0.8vw, 12px); border: 1px solid rgba(128, 128, 128, 0.3); text-align: center;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 13px); color: var(--gray-70); font-weight: 600;">shared/</div>
+            <div style="font-size: clamp(9px, 0.8vw, 11px); color: var(--gray-50); margin-top: 0.3em; line-height: 1.4;">reports/<br>resources/</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="footnote">Three layers, one filesystem. The human context tells agents how to work. The ledger tells them where the work stands. Each role directory is where an agent is spawned — you define the split.</p>
+  </div>
+
+  <!-- SLIDE 8: The Filesystem -->
+  <div class="slide bg-dark" data-slide="7">
+    <div class="label">PROTOCOL</div>
+    <h2>Files are the interface</h2>
+    <div style="display: flex; gap: clamp(16px, 2vw, 32px); align-items: flex-start; margin-top: clamp(12px, 2vh, 24px);">
+      <div class="code-block" style="flex: 1;"><span class="dir">team-root/</span>
+├── ledger.md                     <span class="comment"># coordination state</span>
+├── <span class="dir">shared/</span>
+│   ├── collaboration_context.md  <span class="comment"># how to work with you</span>
+│   ├── routing_protocol.md       <span class="comment"># what flows where</span>
+│   └── reports/
+├── <span class="dir">role-a/</span>                       <span class="comment"># one dir per agent</span>
+│   ├── CLAUDE.md                 <span class="comment"># role instructions</span>
+│   ├── knowledge/                <span class="comment"># persists across sessions</span>
+│   └── outputs/
+├── <span class="dev-dir">role-b/</span>
+│   ├── CLAUDE.md
+│   ├── knowledge/
+│   └── outputs/
+└── <span class="audit-dir">role-n/</span>
+    └── ...</div>
+      <div style="flex: 0 0 clamp(160px, 18vw, 280px); display: flex; flex-direction: column; gap: clamp(8px, 1vh, 14px); padding-top: clamp(4px, 0.5vh, 8px);">
+        <div style="padding: clamp(12px, 1.2vw, 18px); border: 1px solid var(--gray-20); background: var(--dark-card);">
+          <div style="font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--green); margin-bottom: 0.5em;">Every handoff</div>
+          <div style="font-size: clamp(12px, 1.05vw, 15px); color: var(--gray-70); line-height: 1.5;">is a file on disk</div>
+        </div>
+        <div style="padding: clamp(12px, 1.2vw, 18px); border: 1px solid var(--gray-20); background: var(--dark-card);">
+          <div style="font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); margin-bottom: 0.5em;">Every decision</div>
+          <div style="font-size: clamp(12px, 1.05vw, 15px); color: var(--gray-70); line-height: 1.5;">is the human's to route</div>
+        </div>
+        <div style="padding: clamp(12px, 1.2vw, 18px); border: 1px solid var(--gray-20); background: var(--dark-card);">
+          <div style="font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--amber); margin-bottom: 0.5em;">Nothing hidden</div>
+          <div style="font-size: clamp(12px, 1.05vw, 15px); color: var(--gray-70); line-height: 1.5;">in expired sessions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Transversal Dev -->
+  <div class="slide bg-dark" data-slide="8">
+    <div class="label">TRANSVERSAL AGENTS</div>
+    <h2>One agent, multiple repos</h2>
+    <p class="subtitle" style="margin-bottom: clamp(16px, 2.5vh, 28px);">
+      A transversal agent doesn't live in a repo. It lives in the team's coordination layer and navigates into repos as needed.
+    </p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: clamp(8px, 1vw, 16px); margin-bottom: clamp(12px, 2vh, 20px); flex-wrap: wrap;">
+      <!-- Entry points -->
+      <div style="display: flex; flex-direction: column; gap: clamp(4px, 0.5vw, 8px);">
+        <div class="flow-box green-fill" style="font-weight: 700; font-size: clamp(11px, 1vw, 15px);">
+          Windsurf skill
+          <div class="sub" style="color: var(--gray-20);">@role-name</div>
+        </div>
+        <div class="flow-box" style="border-color: var(--green); font-weight: 700; font-size: clamp(11px, 1vw, 15px); background: rgba(0, 220, 130, 0.08);">
+          <span class="green">Claude Code</span>
+          <div class="sub" style="color: var(--gray-50);">CLAUDE.md</div>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <!-- Canonical source -->
+      <div class="flow-box" style="border-color: var(--green); display: flex; flex-direction: column; gap: 0.3em; padding: clamp(12px, 1.2vw, 20px) clamp(16px, 1.8vw, 28px);">
+        <span style="color: var(--green); font-weight: 600;">Dev instructions</span>
+        <div class="sub" style="color: var(--gray-50); font-size: 0.8em;">+ knowledge/</div>
+        <div style="font-size: clamp(9px, 0.8vw, 11px); color: var(--gray-40); margin-top: 0.2em;">on shared filesystem</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <!-- Repos -->
+      <div style="display: flex; flex-direction: column; gap: clamp(4px, 0.5vw, 8px);">
+        <div class="flow-box" style="border-color: var(--teal); padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.5vw, 24px);">
+          <span class="teal" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9em;">repo-one</span>
+        </div>
+        <div class="flow-box" style="border-color: var(--purple); padding: clamp(6px, 0.8vw, 12px) clamp(12px, 1.5vw, 24px);">
+          <span class="purple" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9em;">repo-two</span>
+        </div>
+      </div>
+    </div>
+    <div class="cards" style="max-width: 52em;">
+      <div class="card" style="border-color: var(--gray-20);">
+        <div class="card-label green">THIN POINTER</div>
+        <div class="card-body">The Windsurf skill or Claude Code config tells the agent where to find its real instructions. Canonical role definition lives in <span style="font-family: 'JetBrains Mono', monospace; color: var(--green);">CLAUDE.md</span> on the shared filesystem. Update once, every future session picks it up.</div>
+      </div>
+      <div class="card" style="border-color: var(--gray-20);">
+        <div class="card-label teal">PERSISTENT KNOWLEDGE</div>
+        <div class="card-body">The <span style="font-family: 'JetBrains Mono', monospace; color: var(--teal);">knowledge/</span> directory is loaded every session. Cross-repo patterns, integration conventions, failure modes — the agent gets smarter over time without manual context injection.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: The Ledger -->
+  <div class="slide bg-dark" data-slide="9">
+    <div class="label">COORDINATION STATE</div>
+    <h2>The ledger</h2>
+    <div style="display: flex; gap: clamp(24px, 3vw, 48px); align-items: flex-start; margin-top: clamp(8px, 1.5vh, 16px);">
+
+      <!-- Left: explanation -->
+      <div style="flex: 0 0 clamp(200px, 22vw, 320px);">
+        <p class="subtitle" style="margin-bottom: clamp(12px, 1.5vh, 18px); font-size: clamp(13px, 1.3vw, 18px);">
+          Artifacts are produced once. The ledger is <strong style="color: var(--white);">state</strong> — it evolves continuously. The only file that answers: <span class="green" style="font-weight: 600;">where are we now?</span>
+        </p>
+        <p class="subtitle" style="font-size: clamp(12px, 1.1vw, 15px);">
+          Every role reads it to orient. Multiple projects write to it. The human remains the authority — but isn't the only one keeping it current.
+        </p>
+      </div>
+
+      <!-- Right: git-log style diagram — multiple projects writing to one ledger -->
+      <div style="flex: 1; position: relative; padding-left: clamp(24px, 2.5vw, 36px);">
+        <!-- Vertical trunk line -->
+        <div style="position: absolute; left: clamp(10px, 1.1vw, 16px); top: clamp(8px, 0.8vh, 12px); bottom: clamp(8px, 0.8vh, 12px); width: 2px; background: var(--gray-20);"></div>
+
+        <!-- Entry 1 -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); margin-bottom: clamp(6px, 0.8vh, 10px); position: relative;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--green); z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--green); min-width: clamp(90px, 10vw, 140px);">Project A</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--gray-70);">Spec delivered — phase 1 ready for implementation</div>
+        </div>
+
+        <!-- Entry 2 -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); margin-bottom: clamp(6px, 0.8vh, 10px); position: relative;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--teal); z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--teal); min-width: clamp(90px, 10vw, 140px);">Project B</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--gray-70);">Parameter sweep complete — results in shared/reports/</div>
+        </div>
+
+        <!-- Entry 3 -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); margin-bottom: clamp(6px, 0.8vh, 10px); position: relative;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--green); z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--green); min-width: clamp(90px, 10vw, 140px);">Project A</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--gray-70);">Branch created: <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.9em;">feature/project-a-phase1</span></div>
+        </div>
+
+        <!-- Entry 4 -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); margin-bottom: clamp(6px, 0.8vh, 10px); position: relative;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--purple); z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--purple); min-width: clamp(90px, 10vw, 140px);">Project C</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--gray-70);">Migration staged — blocked on Project A phase 1</div>
+        </div>
+
+        <!-- Entry 5 -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); margin-bottom: clamp(6px, 0.8vh, 10px); position: relative;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--amber); border: none; z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--amber); min-width: clamp(90px, 10vw, 140px);">Project A</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--amber);">Question surfaced → routed to design</div>
+        </div>
+
+        <!-- Entry 6 -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); margin-bottom: clamp(6px, 0.8vh, 10px); position: relative;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--teal); z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--teal); min-width: clamp(90px, 10vw, 140px);">Project B</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--gray-70);">Phase 2 started — review routed for phase 1</div>
+        </div>
+
+        <!-- Entry 7 -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); margin-bottom: clamp(6px, 0.8vh, 10px); position: relative;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--green); z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--green); min-width: clamp(90px, 10vw, 140px);">Project A</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--gray-70);">Phase 1 complete — PR merged, unblocks Project C</div>
+        </div>
+
+        <!-- Entry 8: fading continuation -->
+        <div style="display: flex; align-items: center; gap: clamp(10px, 1.2vw, 18px); position: relative; opacity: 0.35;">
+          <div style="position: absolute; left: calc(clamp(10px, 1.1vw, 16px) - clamp(24px, 2.5vw, 36px) - 3px); width: 8px; height: 8px; border-radius: 50%; background: var(--purple); z-index: 1;"></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: clamp(10px, 0.9vw, 12px); font-weight: 600; color: var(--purple); min-width: clamp(90px, 10vw, 140px);">Project C</div>
+          <div style="font-size: clamp(11px, 1vw, 14px); color: var(--gray-70);">Unblocked — phase 1 started …</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="footnote">Multiple projects, one shared state. The ledger is the pivot at every stage — from a file the human maintains, to the training signal for autonomous coordination.</p>
+  </div>
+
+  <!-- SLIDE 12: Human Orchestration -->
+  <div class="slide bg-dark" data-slide="10">
+    <div class="label">HUMAN CONTEXT</div>
+    <h2>The agent models you, not just the work</h2>
+    <p class="subtitle" style="margin-bottom: clamp(16px, 2.5vh, 28px); max-width: 40em;">
+      The <span style="font-family: 'JetBrains Mono', monospace; color: var(--green);">collaboration_context.md</span> encodes how you reason, what formality you expect, when to ask versus proceed, how you handle disagreement. It's the set of conventions a new team member would take weeks to absorb.
+    </p>
+    <div class="cards" style="max-width: 52em;">
+      <div class="card" style="border-color: var(--amber);">
+        <div class="card-label amber">WITHOUT IT</div>
+        <div class="card-body">Each role infers your preferences independently. Drift across roles. Research gets your style right, but dev sounds like a stranger. Every new session re-learns what the last one figured out.</div>
+      </div>
+      <div class="card accent-green">
+        <div class="card-label green">WITH IT</div>
+        <div class="card-body">Every refinement benefits every future session with every role. A new role added six months from now reads the file and immediately knows how to work with you.</div>
+      </div>
+    </div>
+    <div class="analogy-block" style="margin-top: clamp(16px, 2vh, 24px); max-width: 52em;">
+      <p class="analogy-text" style="font-size: clamp(13px, 1.2vw, 17px);">
+        Sits in <strong>shared/</strong> because it applies to all roles. Role-specific conventions belong in each role's instructions. The routing protocol defines <em>what flows where</em>. The collaboration context defines <em>how to work with the human</em>.
+      </p>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: The Session -->
+  <div class="slide bg-dark" data-slide="11">
+    <div class="label">DAY TO DAY</div>
+    <h2>Each session consumes and produces context</h2>
+    <div class="session-steps">
+      <div class="session-step" style="border-color: var(--green);">
+        <div class="session-step-num">ORIENT</div>
+        <div class="session-step-title">Read state</div>
+        <div class="session-step-desc">Ledger, collaboration context, knowledge directory. The agent knows what's active, what phase it's in, what's open.</div>
+      </div>
+      <div class="session-step" style="border-color: var(--teal);">
+        <div class="session-step-num">WORK</div>
+        <div class="session-step-title">Execute</div>
+        <div class="session-step-desc">Navigate to repos, implement from specs, run tests. Write questions to disk when the spec is ambiguous.</div>
+      </div>
+      <div class="session-step" style="border-color: var(--purple);">
+        <div class="session-step-num">UPDATE</div>
+        <div class="session-step-title">Write state</div>
+        <div class="session-step-desc">Update the ledger with phase transitions, branches created, questions surfaced, results produced.</div>
+      </div>
+      <div class="session-step" style="border-color: var(--amber);">
+        <div class="session-step-num">CAPTURE</div>
+        <div class="session-step-title">Persist knowledge</div>
+        <div class="session-step-desc">Cross-repo patterns, conventions, failure modes, decisions. The knowledge directory grows into a reference manual.</div>
+      </div>
+    </div>
+    <p class="footnote">By session five or six, the agent anticipates integration issues before you raise them.</p>
+  </div>
+
+  <!-- SLIDE 13: The Trajectory -->
+  <div class="slide bg-dark" data-slide="12">
+    <div class="label">THE VISION</div>
+    <h2>Four stages of agent state</h2>
+    <div class="stages">
+      <div class="stage">
+        <div class="stage-num" style="color: var(--gray-50);">1</div>
+        <div class="stage-title">Artifact state</div>
+        <div class="stage-desc">Agents read and write files. Communication through static documents.</div>
+        <div class="stage-marker" style="color: var(--gray-50);">FOUNDATION</div>
+      </div>
+      <div class="stage active-stage">
+        <div class="stage-num green">2</div>
+        <div class="stage-title green">Coordination state</div>
+        <div class="stage-desc">A shared ledger tracks where things are. Agents read it to orient, update it when state changes.</div>
+        <div class="stage-marker green">WE ARE HERE</div>
+      </div>
+      <div class="stage future-stage">
+        <div class="stage-num">3</div>
+        <div class="stage-title">Workflow state</div>
+        <div class="stage-desc">Git operations tie to ledger phases. The agent creates branches when phases start, merges when they complete.</div>
+        <div class="stage-marker muted">NEXT</div>
+      </div>
+      <div class="stage future-stage">
+        <div class="stage-num">4</div>
+        <div class="stage-title">Internalized state</div>
+        <div class="stage-desc">The human discusses intent. The agent handles the coordination mechanics.</div>
+        <div class="stage-marker muted">ASPIRATION</div>
+      </div>
+    </div>
+    <p class="footnote">The ledger is the pivot at every stage — from a file the human maintains, to the pattern from which agents learn the workflow.</p>
+  </div>
+
+  <!-- SLIDE 14: Our Example -->
+  <div class="slide bg-dark" data-slide="13">
+    <div class="label">OUR SETUP</div>
+    <h2>The quant team at Reya</h2>
+    <div class="cards" style="margin-bottom: clamp(12px, 1.5vh, 18px);">
+      <div class="card accent-green">
+        <div class="card-label green">RESEARCH</div>
+        <div class="card-title">Design & spec</div>
+        <div class="card-body">
+          Co-develops formal specs — margin models, funding rates, risk parameters. Outputs self-contained deliverables. Runs in <strong style="color: var(--white);">Cowork</strong> (filesystem access, no terminal needed).
+        </div>
+      </div>
+      <div class="card accent-teal">
+        <div class="card-label teal">DEV (TRANSVERSAL)</div>
+        <div class="card-title">Implementation</div>
+        <div class="card-body">
+          Translates specs to code across <span style="font-family: 'JetBrains Mono', monospace; color: var(--teal);">reya-quant</span> and <span style="font-family: 'JetBrains Mono', monospace; color: var(--teal);">reya-data</span>. Surfaces questions, accumulates knowledge. Runs in <strong style="color: var(--white);">Windsurf</strong> via <span style="font-family: 'JetBrains Mono', monospace; color: var(--teal);">@quant-dev</span>.
+        </div>
+      </div>
+      <div class="card accent-red">
+        <div class="card-label red">AUDIT</div>
+        <div class="card-title">Cold review</div>
+        <div class="card-body">
+          Reads specs and implementation reports with no prior context. Identifies failure modes, numerical instabilities, parameter sensitivities. Runs in <strong style="color: var(--white);">Cowork</strong>.
+        </div>
+      </div>
+    </div>
+    <div class="analogy-block" style="max-width: 52em;">
+      <p class="analogy-text" style="font-size: clamp(12px, 1.1vw, 16px);">
+        This is one instantiation. You might split by <strong>domain</strong> instead of function, add a <strong>documentation</strong> role, or separate <strong>research from design</strong>. The architecture is the filesystem, the ledger, and the human context — the roles are yours to define.
+      </p>
+    </div>
+  </div>
+
+  <!-- SLIDE 15: Setup at a Glance -->
+  <div class="slide bg-light" data-slide="14">
+    <div class="label">GETTING STARTED</div>
+    <h2>Setting up your own</h2>
+    <div style="margin: clamp(12px, 2vh, 24px) 0;">
+      <div class="setup-row">
+        <div class="setup-accent" style="background: var(--green);"></div>
+        <div class="setup-num green">01</div>
+        <div class="setup-role">Define roles</div>
+        <div class="setup-reason">Separate the cognitive modes: design, implementation, review. Map each to a tool with the right access level.</div>
+      </div>
+      <div class="setup-row">
+        <div class="setup-accent" style="background: var(--teal);"></div>
+        <div class="setup-num teal">02</div>
+        <div class="setup-role">Build the filesystem</div>
+        <div class="setup-reason">Create the directory structure: role directories, shared state, routing protocol, collaboration context.</div>
+      </div>
+      <div class="setup-row">
+        <div class="setup-accent" style="background: var(--purple);"></div>
+        <div class="setup-num purple">03</div>
+        <div class="setup-role">Write role instructions</div>
+        <div class="setup-reason">One canonical file per role. What it reads, what it writes, when it updates the ledger, what knowledge to capture.</div>
+      </div>
+      <div class="setup-row">
+        <div class="setup-accent" style="background: var(--amber);"></div>
+        <div class="setup-num amber">04</div>
+        <div class="setup-role">Initialize the ledger</div>
+        <div class="setup-reason">Start with your current workstreams, phases, open questions. Doesn't need to be comprehensive — needs to be accurate.</div>
+      </div>
+    </div>
+    <p class="subtitle" style="color: var(--gray-50); max-width: 44em;">
+      Different tools for different roles. One shared filesystem. One ledger. One coordination protocol.
+    </p>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav" id="nav"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  const nav = document.getElementById('nav');
+  let current = 0;
+
+  // Build nav dots
+  const counter = document.createElement('span');
+  counter.className = 'nav-counter';
+  nav.appendChild(counter);
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    nav.appendChild(dot);
+  });
+
+  function goTo(n) {
+    if (n < 0 || n >= slides.length) return;
+    slides[current].classList.remove('active');
+    nav.querySelectorAll('.nav-dot')[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    nav.querySelectorAll('.nav-dot')[current].classList.add('active');
+    progress.style.width = ((current / (slides.length - 1)) * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+
+    // Adapt nav colors based on slide bg
+    const isLight = slides[current].classList.contains('bg-light');
+    nav.querySelectorAll('.nav-dot').forEach(d => {
+      if (!d.classList.contains('active')) {
+        d.style.background = isLight ? '#CCC' : '';
+      }
+    });
+    counter.style.color = isLight ? '#999' : '';
+  }
+
+  goTo(0);
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goTo(slides.length - 1);
+    }
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Team Architecture — Reference Document</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --black: #0A0A0A;
+    --dark-card: #141414;
+    --dark-surface: #111111;
+    --green: #00DC82;
+    --green-dim: #00B368;
+    --green-glow: rgba(0, 220, 130, 0.08);
+    --white: #FFFFFF;
+    --off-white: #F5F5F5;
+    --gray-90: #E5E5E5;
+    --gray-70: #B3B3B3;
+    --gray-50: #808080;
+    --gray-40: #666666;
+    --gray-20: #333333;
+    --gray-15: #262626;
+    --red: #EF4444;
+    --teal: #14B8A6;
+    --purple: #8B5CF6;
+    --amber: #F59E0B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--black);
+    color: var(--gray-70);
+    line-height: 1.72;
+    font-size: 16px;
+  }
+
+  /* --- LAYOUT --- */
+  .page-wrapper {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* --- SIDEBAR NAV --- */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--dark-surface);
+    border-right: 1px solid var(--gray-20);
+    padding: 32px 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .sidebar-brand {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--green);
+    padding: 0 24px;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white);
+    padding: 0 24px;
+    margin-bottom: 28px;
+    line-height: 1.3;
+  }
+
+  .sidebar a {
+    display: block;
+    padding: 7px 24px 7px 24px;
+    font-size: 13px;
+    color: var(--gray-50);
+    text-decoration: none;
+    transition: color 0.2s, background 0.2s;
+    border-left: 2px solid transparent;
+  }
+
+  .sidebar a:hover {
+    color: var(--gray-70);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .sidebar a.active {
+    color: var(--green);
+    border-left-color: var(--green);
+    background: var(--green-glow);
+  }
+
+  .sidebar a.section-link {
+    font-weight: 600;
+    color: var(--gray-70);
+    margin-top: 14px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sidebar a.section-link.active {
+    color: var(--green);
+  }
+
+  .sidebar a.sub-link {
+    padding-left: 36px;
+    font-size: 12.5px;
+  }
+
+  /* --- MAIN CONTENT --- */
+  .main {
+    margin-left: 260px;
+    max-width: 820px;
+    padding: 64px 56px 120px 56px;
+  }
+
+  /* --- TYPOGRAPHY --- */
+  h1 {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+
+  h1 .green { color: var(--green); }
+
+  .doc-subtitle {
+    font-size: 18px;
+    color: var(--gray-50);
+    margin-bottom: 20px;
+    line-height: 1.55;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.01em;
+    margin-top: 72px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--gray-20);
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--white);
+    margin-top: 48px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin-bottom: 16px;
+    max-width: 65ch;
+  }
+
+  strong, b { color: var(--white); font-weight: 600; }
+
+  em { color: var(--gray-90); }
+
+  a { color: var(--green); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .green { color: var(--green); }
+  .teal { color: var(--teal); }
+  .red { color: var(--red); }
+  .purple { color: var(--purple); }
+  .amber { color: var(--amber); }
+
+  /* --- CALLOUT BLOCK --- */
+  .callout {
+    border-left: 3px solid var(--green);
+    padding: 20px 24px;
+    background: var(--green-glow);
+    margin: 28px 0;
+    max-width: 65ch;
+  }
+
+  .callout p {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout strong { color: var(--white); }
+
+  .callout.amber-callout {
+    border-left-color: var(--amber);
+    background: rgba(245, 158, 11, 0.06);
+  }
+
+  /* --- CODE BLOCK --- */
+  .code-block {
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+    padding: 24px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--gray-70);
+    margin: 24px 0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .code-block .dir { color: var(--green); font-weight: 600; }
+  .code-block .b-dir { color: var(--teal); font-weight: 600; }
+  .code-block .c-dir { color: var(--red); font-weight: 600; }
+  .code-block .comment { color: var(--gray-40); font-style: italic; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    color: var(--green);
+    background: rgba(0,220,130,0.06);
+    padding: 2px 6px;
+  }
+
+  /* --- INLINE DIAGRAM: ARCHITECTURE MAP --- */
+  .arch-map {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 32px 0;
+    max-width: 680px;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 18px 24px;
+  }
+
+  .arch-layer-label {
+    min-width: 110px;
+  }
+
+  .arch-layer-label .tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .arch-layer-label .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  .arch-layer-content {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+  }
+
+  .arch-cell {
+    flex: 1;
+    padding: 10px 14px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .arch-cell .sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    color: var(--gray-50);
+    margin-top: 3px;
+  }
+
+  .arch-connector {
+    display: flex;
+    justify-content: space-around;
+    padding: 0 140px;
+  }
+
+  .arch-connector-line {
+    width: 2px;
+    height: 12px;
+    background: var(--gray-20);
+  }
+
+  .layer-human {
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid var(--amber);
+  }
+  .layer-human .tag { color: var(--amber); }
+  .layer-human .arch-cell {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    color: var(--amber);
+  }
+
+  .layer-state {
+    background: rgba(0, 220, 130, 0.06);
+    border: 1px solid var(--green);
+  }
+  .layer-state .tag { color: var(--green); }
+  .layer-state .arch-cell {
+    background: rgba(0, 220, 130, 0.08);
+    border: 1px solid rgba(0, 220, 130, 0.25);
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .layer-agent {
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+  }
+  .layer-agent .tag { color: var(--gray-50); }
+
+  .cell-a { color: var(--green); border: 1px solid rgba(0,220,130,0.3); }
+  .cell-b { color: var(--teal); border: 1px solid rgba(20,184,166,0.3); }
+  .cell-n { color: var(--purple); border: 1px solid rgba(139,92,246,0.3); }
+  .cell-shared { color: var(--gray-70); border: 1px solid rgba(128,128,128,0.3); }
+
+  /* --- INLINE DIAGRAM: GIT-LOG LEDGER --- */
+  .ledger-log {
+    position: relative;
+    padding-left: 32px;
+    margin: 28px 0 28px 8px;
+    max-width: 600px;
+  }
+
+  .ledger-log::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--gray-20);
+  }
+
+  .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+
+  .log-entry .dot {
+    position: absolute;
+    left: -29px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .log-entry .project {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 100px;
+  }
+
+  .log-entry .desc {
+    font-size: 13px;
+    color: var(--gray-70);
+  }
+
+  .log-entry.faded { opacity: 0.35; }
+
+  /* --- INLINE DIAGRAM: TRANSVERSAL FLOW --- */
+  .trans-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 28px 0;
+    flex-wrap: wrap;
+  }
+
+  .tf-box {
+    padding: 12px 20px;
+    border: 1px solid var(--gray-20);
+    background: var(--dark-card);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .tf-box.filled {
+    background: var(--green);
+    color: var(--black);
+    border-color: var(--green);
+  }
+
+  .tf-box.outlined-green {
+    border-color: var(--green);
+    background: rgba(0,220,130,0.08);
+  }
+
+  .tf-box .sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--gray-50);
+    margin-top: 3px;
+  }
+
+  .tf-box.filled .sub { color: var(--gray-20); }
+
+  .tf-arrow {
+    font-size: 18px;
+    color: var(--gray-50);
+  }
+
+  /* --- INLINE DIAGRAM: SESSION CYCLE --- */
+  .session-cycle {
+    display: flex;
+    gap: 12px;
+    margin: 28px 0;
+  }
+
+  .sc-step {
+    flex: 1;
+    padding: 18px 16px;
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .sc-step .step-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .sc-step .step-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  .sc-step .step-desc {
+    font-size: 12px;
+    color: var(--gray-50);
+    line-height: 1.5;
+  }
+
+  /* --- INLINE DIAGRAM: TRAJECTORY --- */
+  .trajectory {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 28px 0;
+    max-width: 640px;
+  }
+
+  .traj-stage {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 22px;
+    border: 1px solid var(--gray-20);
+    background: var(--dark-card);
+  }
+
+  .traj-stage .num {
+    font-size: 18px;
+    font-weight: 800;
+    min-width: 1.6em;
+  }
+
+  .traj-stage .title {
+    font-size: 14px;
+    font-weight: 700;
+    min-width: 9em;
+  }
+
+  .traj-stage .desc {
+    font-size: 13px;
+    color: var(--gray-70);
+    flex: 1;
+  }
+
+  .traj-stage .marker {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .traj-stage.here {
+    border-color: var(--green);
+    background: rgba(0,220,130,0.06);
+  }
+
+  .traj-stage.future {
+    opacity: 0.5;
+  }
+
+  /* --- PRINCIPLE CARD --- */
+  .principle-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px 24px;
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+    margin: 16px 0;
+    max-width: 65ch;
+  }
+
+  .principle-block .icon {
+    font-size: 24px;
+    font-weight: 800;
+    min-width: 1.4em;
+    text-align: center;
+  }
+
+  .principle-block .p-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+
+  .principle-block .p-desc {
+    font-size: 14px;
+    color: var(--gray-70);
+    line-height: 1.6;
+    margin-bottom: 4px;
+  }
+
+  .principle-block .p-sub {
+    font-size: 12px;
+    color: var(--gray-50);
+    font-style: italic;
+  }
+
+  /* --- SETUP STEPS --- */
+  .setup-step {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 22px;
+    background: var(--dark-card);
+    border: 1px solid var(--gray-20);
+    margin: 8px 0;
+  }
+
+  .setup-step .num {
+    font-size: 22px;
+    font-weight: 800;
+    min-width: 2em;
+  }
+
+  .setup-step .role {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white);
+    min-width: 12em;
+  }
+
+  .setup-step .reason {
+    font-size: 13px;
+    color: var(--gray-50);
+    flex: 1;
+  }
+
+  /* --- RESPONSIVE --- */
+  @media (max-width: 960px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 40px 24px 80px 24px; }
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 32px; }
+    h2 { font-size: 22px; }
+    .session-cycle { flex-direction: column; }
+    .trans-flow { flex-direction: column; align-items: stretch; }
+    .arch-layer { flex-direction: column; gap: 10px; }
+    .arch-layer-content { flex-wrap: wrap; }
+    .arch-connector { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR NAVIGATION -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">Reference</div>
+  <div class="sidebar-title">AI Team Architecture</div>
+
+  <a href="#premise" class="section-link">1. The Premise</a>
+  <a href="#trajectory" class="sub-link">Trajectory</a>
+  <a href="#why-this-matters" class="sub-link">Why this matters</a>
+  <a href="#meta-principles" class="sub-link">Principles overview</a>
+  <a href="#three-layers" class="sub-link">Three-layer architecture</a>
+
+  <a href="#principles" class="section-link">2. Principles</a>
+  <a href="#role-separation" class="sub-link">Role separation</a>
+  <a href="#filesystem-protocol" class="sub-link">Filesystem as protocol</a>
+  <a href="#knowledge-layering" class="sub-link">Knowledge layering</a>
+  <a href="#coordination-state" class="sub-link">Coordination state</a>
+  <a href="#human-router" class="sub-link">Human as router</a>
+  <a href="#collaboration-context" class="sub-link">Collaboration context</a>
+
+  <a href="#example" class="section-link">3. Worked Example</a>
+  <a href="#the-team" class="sub-link">The team</a>
+  <a href="#transversal-dev" class="sub-link">Transversal dev agent</a>
+  <a href="#tooling" class="sub-link">Tooling choices</a>
+  <a href="#lessons" class="sub-link">What we learned</a>
+
+  <a href="#orchestration" class="section-link">4. Orchestration</a>
+  <a href="#inter-role" class="sub-link">Inter-role interface</a>
+  <a href="#session-workflow" class="sub-link">Session workflow</a>
+  <a href="#knowledge-writeback" class="sub-link">Knowledge write-back</a>
+  <a href="#implicit-orch" class="sub-link">Implicit orchestration</a>
+
+  <a href="#setup" class="section-link">5. Setting Up</a>
+  <a href="#entry-points" class="sub-link">Entry points</a>
+  <a href="#mcp-config" class="sub-link">MCP configuration</a>
+  <a href="#scaffold" class="sub-link">Step-by-step scaffold</a>
+  <a href="#diagnostic" class="sub-link">Diagnostic questions</a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="page-wrapper">
+<main class="main">
+
+<!-- ============================================ -->
+<!-- TITLE -->
+<!-- ============================================ -->
+<h1>AI Team Architecture<br><span class="green">Agents as Team Members, Not Repo Tools</span></h1>
+<p class="doc-subtitle">A design pattern for role-scoped, stateful AI agents that coordinate through a shared filesystem and evolve from tools into team members.</p>
+<p style="margin-bottom: 48px;"><a href="ai_team_architecture.html" style="font-size: 13px; font-weight: 600; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--green); padding: 8px 16px; display: inline-block; transition: background 0.2s;">View Presentation ↗</a></p>
+
+<!-- ============================================ -->
+<!-- §1 THE PREMISE -->
+<!-- ============================================ -->
+<h2 id="premise">1. The premise</h2>
+
+<p>The default way to use an AI agent in engineering is straightforward: open a repo, start a session, get work done. The agent is scoped to the codebase it can see. Within that scope, it's genuinely capable — it reasons about architecture, writes working code, catches bugs. But it's bounded by what it can see: one repo, one session, one cognitive mode at a time.</p>
+
+<p>This works. Until you need coordination across repos. Until you need persistent knowledge across sessions. Until you need rigor that doesn't degrade as alignment deepens.</p>
+
+<p><strong>The alternative: scope the agent to a role, not a repo.</strong></p>
+
+<p>The difference between a tool and a team member is <strong class="green">state</strong>. A repo-scoped agent is stateless relative to the team. It knows the code but not the work — not what phase you're in, not what was tried before, not how you think. A role-scoped agent carries state: coordination state about where the project stands, accumulated knowledge about what patterns have emerged, and context about the human it's working with. Each session builds on the last.</p>
+
+<p>This is not a marginal improvement. It changes what the agent can do for you.</p>
+
+<!-- Trajectory -->
+<h3 id="trajectory">The trajectory</h3>
+
+<p>The architecture describes a progression in what kind of state agents carry:</p>
+
+<!-- DIAGRAM: Trajectory stages -->
+<div class="trajectory">
+  <div class="traj-stage">
+    <div class="num" style="color: var(--gray-50);">1</div>
+    <div class="title">Artifact state</div>
+    <div class="desc">Agents read and write files. Communication is through static, point-in-time documents — specs, reports, findings.</div>
+    <div class="marker" style="color: var(--gray-50);">FOUNDATION</div>
+  </div>
+  <div class="traj-stage here">
+    <div class="num green">2</div>
+    <div class="title green">Coordination state</div>
+    <div class="desc">A shared ledger tracks where things are: active workstreams, current phases, open questions, blocking dependencies. The system becomes dynamic.</div>
+    <div class="marker green">WE ARE HERE</div>
+  </div>
+  <div class="traj-stage future">
+    <div class="num">3</div>
+    <div class="title">Workflow state</div>
+    <div class="desc">Git operations tie to ledger phases. The agent creates branches when phases start, merges when they complete.</div>
+    <div class="marker" style="color: var(--gray-50);">NEXT</div>
+  </div>
+  <div class="traj-stage future">
+    <div class="num">4</div>
+    <div class="title">Internalized state</div>
+    <div class="desc">The agent has learned the orchestration patterns deeply enough that the human discusses intent, and the agent surfaces the coordination decisions at the natural points.</div>
+    <div class="marker" style="color: var(--gray-50);">ASPIRATION</div>
+  </div>
+</div>
+
+<p>We operate today between stages one and two. The architecture is designed to support the full progression.</p>
+
+<!-- Why this matters -->
+<h3 id="why-this-matters">Why this matters</h3>
+
+<p>Three structural benefits follow from scoping agents to roles:</p>
+
+<p><strong>Knowledge compounds.</strong> A repo-scoped agent starts fresh every session, or at best retains what's in the codebase. A role-scoped agent accumulates cross-cutting knowledge — how data flows between services, what patterns emerged from past implementations, which failure modes were encountered and resolved. This knowledge lives with the agent, not with any single repo. Each session builds on the last.</p>
+
+<p><strong>Context doesn't collapse.</strong> When you separate design from implementation from review, each function operates with the context boundary it needs. The design agent builds deep alignment with you over conversation. The implementation agent works from the spec, not the conversation. The review agent sees deliverables cold. No single session tries to hold all three cognitive modes at once.</p>
+
+<p><strong>Coordination scales.</strong> A shared filesystem becomes the communication protocol. Specs, questions, findings, reports — they're all files on disk. The human routes between roles by deciding which artifact goes where. The ledger tracks what's active, what's blocked, what's done. This is observable, auditable, and persistent. Nothing is hidden in a conversation that expired.</p>
+
+<div class="callout">
+  <p>In theory, you can achieve compounding knowledge, stable context, and scalable coordination manually. Maintain markdown files with accumulated knowledge. Copy relevant context into each session. Write down what phase you're in. Relay status between roles by hand. People do this — it's the engineering equivalent of copying folders and naming them <code>project_v2_final_FINAL</code>.</p>
+  <p><strong>Git didn't make version control possible.</strong> People versioned their code before git existed. What git did is make version control systematic enough that it actually happens — the discipline becomes embedded in the workflow rather than depending on the human remembering to do it.</p>
+  <p>This architecture does the same for agent coordination. The agents read the ledger because their instructions say to. They write knowledge back because the role definition includes it. They update state because the workflow demands it. <strong class="green">The discipline is structural, not aspirational.</strong></p>
+</div>
+
+<!-- Principles overview -->
+<h3 id="meta-principles">Principles</h3>
+
+<p>These benefits are realized through three meta-principles, each giving rise to concrete design principles:</p>
+
+<div class="principle-block" style="border-color: var(--teal);">
+  <div class="icon teal">⟷</div>
+  <div>
+    <div class="p-title">Transversal coordination and context sharing</div>
+    <div class="p-desc">Agents share context across repo boundaries through a structured filesystem, with knowledge stratified by where it's consumed.</div>
+    <div class="p-sub">Role separation · Filesystem as protocol · Knowledge layering</div>
+  </div>
+</div>
+
+<div class="principle-block" style="border-color: var(--green);">
+  <div class="icon green">◉</div>
+  <div>
+    <div class="p-title">Statefulness in project management</div>
+    <div class="p-desc">Coordination requires dynamic state that evolves with the work, not just static artifacts.</div>
+    <div class="p-sub">Coordination state (the ledger)</div>
+  </div>
+</div>
+
+<div class="principle-block" style="border-color: var(--amber);">
+  <div class="icon amber">⊕</div>
+  <div>
+    <div class="p-title">Human coordination and context</div>
+    <div class="p-desc">The human is central to the system, both as the router of information flow and as a source of context that every role needs.</div>
+    <div class="p-sub">Human as router · Collaboration context</div>
+  </div>
+</div>
+
+<!-- Three-layer architecture — NEW -->
+<h3 id="three-layers">The three-layer architecture</h3>
+
+<p>The meta-principles map onto a concrete three-layer structure. Everything in the system sits in one of these layers:</p>
+
+<!-- DIAGRAM: Architecture Map -->
+<div class="arch-map">
+  <!-- Human layer -->
+  <div class="arch-layer layer-human">
+    <div class="arch-layer-label">
+      <div class="tag">HUMAN LAYER</div>
+      <div class="name">You (router)</div>
+    </div>
+    <div class="arch-layer-content">
+      <div class="arch-cell">
+        collaboration_context.md
+        <div class="sub">how you think &amp; work</div>
+      </div>
+      <div class="arch-cell">
+        routing_protocol.md
+        <div class="sub">what flows where</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connector -->
+  <div class="arch-connector">
+    <div class="arch-connector-line"></div>
+    <div class="arch-connector-line"></div>
+    <div class="arch-connector-line"></div>
+  </div>
+
+  <!-- State layer -->
+  <div class="arch-layer layer-state">
+    <div class="arch-layer-label">
+      <div class="tag">STATE LAYER</div>
+      <div class="name">Coordination</div>
+    </div>
+    <div class="arch-layer-content">
+      <div class="arch-cell" style="flex: 2;">
+        ledger.md
+        <div class="sub">all roles read · all roles write · evolves continuously</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connector -->
+  <div class="arch-connector">
+    <div class="arch-connector-line"></div>
+    <div class="arch-connector-line"></div>
+    <div class="arch-connector-line"></div>
+  </div>
+
+  <!-- Agent layer -->
+  <div class="arch-layer layer-agent">
+    <div class="arch-layer-label">
+      <div class="tag">AGENT LAYER</div>
+      <div class="name">Roles</div>
+    </div>
+    <div class="arch-layer-content">
+      <div class="arch-cell cell-a">
+        role-a/
+        <div class="sub">CLAUDE.md · knowledge/ · outputs/</div>
+      </div>
+      <div class="arch-cell cell-b">
+        role-b/
+        <div class="sub">CLAUDE.md · knowledge/ · outputs/</div>
+      </div>
+      <div class="arch-cell cell-n">
+        role-n/
+        <div class="sub">CLAUDE.md · knowledge/ · outputs/</div>
+      </div>
+      <div class="arch-cell cell-shared">
+        shared/
+        <div class="sub">reports/ · resources/</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>The <strong>human layer</strong> provides the context that makes every session productive — how you think, how you work, and the routing contract between roles. The <strong>state layer</strong> is the ledger: the only file that answers "where are we now?" The <strong>agent layer</strong> is where agents are spawned — each role directory defines an agent topology. You define the split: by function, by domain, or however your work naturally decomposes.</p>
+
+<p>Three layers, one filesystem. The human context tells agents how to work. The ledger tells them where the work stands. Each role directory is where an agent is spawned.</p>
+
+<!-- ============================================ -->
+<!-- §2 PRINCIPLES -->
+<!-- ============================================ -->
+<h2 id="principles">2. Principles</h2>
+
+<h3 id="role-separation">Role separation</h3>
+
+<p>A single long-running conversation with one agent produces alignment drift — the agent progressively models your preferences and becomes less likely to challenge the work. This is productive for co-development. It is dangerous for review. You want deep alignment when building and fresh eyes when reviewing, and those are mutually exclusive cognitive modes.</p>
+
+<p>The solution: separate the functions that benefit from alignment from the functions that suffer. The minimum viable separation is design, implementation, and cold review. You can extend from there — domain-specific implementation roles, separate design from research, specialized reviewers. The underlying principle is the same: functions with different context requirements get different instances.</p>
+
+<p>One decision deserves emphasis: the review function must have <em>no access</em> to the design reasoning. If a spec requires background reasoning to seem correct, the spec is under-documented. The review function enforces this precisely because it can't see the reasoning chain.</p>
+
+<h3 id="filesystem-protocol">Filesystem as protocol</h3>
+
+<p>Agents communicate through files on a shared filesystem, not through conversation history. Files are persistent, observable, and composable. You can audit the full history of an engagement by reading the directories. Nothing is hidden in a session that expired.</p>
+
+<p>The directory structure is the protocol. Each role reads from defined directories and writes to defined directories. A routing document specifies who reads what and who writes where. Each role directory is not just a filing structure — it defines where an agent is spawned, with its own instructions, its own knowledge, and its own output contract:</p>
+
+<div class="code-block"><span class="dir">team-root/</span>
+├── ledger.md                     <span class="comment"># coordination state</span>
+├── <span class="dir">shared/</span>
+│   ├── collaboration_context.md  <span class="comment"># how to work with the human</span>
+│   ├── routing_protocol.md       <span class="comment"># interface contract between roles</span>
+│   └── reports/                  <span class="comment"># cross-role deliverables</span>
+├── <span class="dir">role-a/</span>                       <span class="comment"># agent spawned here</span>
+│   ├── CLAUDE.md                 <span class="comment"># role instructions</span>
+│   ├── knowledge/                <span class="comment"># persists across sessions</span>
+│   └── outputs/
+├── <span class="b-dir">role-b/</span>                       <span class="comment"># agent spawned here</span>
+│   ├── CLAUDE.md
+│   ├── knowledge/
+│   └── outputs/
+└── <span class="c-dir">role-n/</span>                       <span class="comment"># agent spawned here</span>
+    └── ...</div>
+
+<p>This is an example, not a prescription. The structure should reflect the team's actual roles and communication patterns. What matters is the principle: each directory is an agent's home, and the filesystem is the communication layer between them.</p>
+
+<h3 id="knowledge-layering">Knowledge layering</h3>
+
+<p>Knowledge lives at the level where it's consumed.</p>
+
+<p><strong>Repo-specific knowledge stays in the repo.</strong> Docstrings, READMEs, CI configuration — these belong with the codebase.</p>
+
+<p><strong>Cross-cutting knowledge lives with the agent.</strong> When an agent works transversally across repos, it accumulates knowledge that doesn't belong to any single codebase: how data flows between services, what integration patterns emerged, what decisions were made during implementation that aren't in any spec. This knowledge is structurally homeless in a repo-scoped model — it ends up in Slack, in someone's head, or nowhere. In a role-scoped model, it has a natural home: the agent's persistent knowledge directory, loaded at the start of every session regardless of which repo is open.</p>
+
+<p><strong>Team coordination lives in shared state.</strong> The routing protocol, the collaboration context, the ledger — read by all roles.</p>
+
+<p><strong>Role instructions are the single source of truth per role.</strong> One canonical file defines what the agent does, how it orients, what it writes and where.</p>
+
+<p>This creates a clean separation: what belongs to the code travels with the code; what belongs to the team persists independently.</p>
+
+<h3 id="coordination-state">Coordination state</h3>
+
+<p>The ledger is the coordination state for the entire team. It tracks active workstreams, current phases, open questions, blocking dependencies. Every role reads it to orient at the start of a session.</p>
+
+<p>The ledger is different in kind from every other file in the system. Specs, questions, findings, reports are artifacts — produced once, consumed by whoever reads them. The ledger is <strong>state</strong>. It evolves continuously. It's the only file that answers "where are we right now?"</p>
+
+<!-- DIAGRAM: Ledger git-log -->
+<div class="ledger-log">
+  <div class="log-entry">
+    <div class="dot" style="background: var(--green);"></div>
+    <div class="project green">Project A</div>
+    <div class="desc">Spec delivered — phase 1 ready for implementation</div>
+  </div>
+  <div class="log-entry">
+    <div class="dot" style="background: var(--teal);"></div>
+    <div class="project teal">Project B</div>
+    <div class="desc">Parameter sweep complete — results in shared/reports/</div>
+  </div>
+  <div class="log-entry">
+    <div class="dot" style="background: var(--green);"></div>
+    <div class="project green">Project A</div>
+    <div class="desc">Branch created: <code style="background: none; padding: 0;">feature/project-a-phase1</code></div>
+  </div>
+  <div class="log-entry">
+    <div class="dot" style="background: var(--purple);"></div>
+    <div class="project purple">Project C</div>
+    <div class="desc">Migration staged — blocked on Project A phase 1</div>
+  </div>
+  <div class="log-entry">
+    <div class="dot" style="background: var(--amber);"></div>
+    <div class="project amber">Project A</div>
+    <div class="desc" style="color: var(--amber);">Question surfaced → routed to design</div>
+  </div>
+  <div class="log-entry">
+    <div class="dot" style="background: var(--teal);"></div>
+    <div class="project teal">Project B</div>
+    <div class="desc">Phase 2 started — review routed for phase 1</div>
+  </div>
+  <div class="log-entry">
+    <div class="dot" style="background: var(--green);"></div>
+    <div class="project green">Project A</div>
+    <div class="desc">Phase 1 complete — PR merged, unblocks Project C</div>
+  </div>
+  <div class="log-entry faded">
+    <div class="dot" style="background: var(--purple);"></div>
+    <div class="project purple">Project C</div>
+    <div class="desc">Unblocked — phase 1 started …</div>
+  </div>
+</div>
+
+<p>This is not just an agent coordination tool. It is how you organize your own timelines and work. The ledger connects your project management to your agent orchestration. Maintaining the ledger is maintaining clarity about the state of the work.</p>
+
+<p>Agents update it when meaningful state changes occur — phase transitions, branches created or merged, PRs opened or closed, questions resolved, implementation results that affect design decisions. The human remains the authority, but isn't the only one keeping it current.</p>
+
+<p>The ledger also connects to the trajectory in §1. At stage one, it's a file the human maintains. At stage two, agents update it. At stage three, it synchronizes with git. At stage four, it becomes the pattern from which agents learn the workflow. Ledger discipline is not overhead. It is the training signal for increasingly autonomous coordination.</p>
+
+<h3 id="human-router">Human as router</h3>
+
+<p>All routing goes through the human. No agent communicates directly with another.</p>
+
+<p>This is not bureaucracy. It is the mechanism that keeps you central to every decision. When the dev agent surfaces a question about the spec, it writes the question to disk. You read it, decide whether it's a design question or an implementation question, and route it.</p>
+
+<p>Most multi-agent frameworks (CrewAI, AutoGen, LangGraph) focus on autonomous agent-to-agent communication. The failure mode is subtle: context loss and misaligned decisions that compound silently. A human router catches these. The overhead is low — you're already reading the outputs — and the alignment benefit is high. The model is closer to the blackboard architecture from classical AI: agents read from and write to a shared repository, and a human controller decides what gets routed where.</p>
+
+<h3 id="collaboration-context">Collaboration context</h3>
+
+<p>Agents need to understand the human, not just the work. The collaboration context file encodes operational context: how you reason, what formality you expect, when to ask versus proceed, how you handle disagreements. It's the set of conventions a new team member would take weeks to absorb.</p>
+
+<p>Without it, each role infers your preferences independently — producing drift across roles. A shared collaboration context eliminates this and compounds over time: every refinement benefits every future session with every role. A new role added six months from now reads the file and immediately knows how to work with you.</p>
+
+<p>The collaboration context sits in <code>shared/</code> because it applies to all roles. Role-specific conventions belong in each role's instructions.</p>
+
+<!-- ============================================ -->
+<!-- §3 WORKED EXAMPLE -->
+<!-- ============================================ -->
+<h2 id="example">3. Worked example: a quant team at Reya</h2>
+
+<p>This section describes how these principles play out in practice with a specific team configuration. The purpose is to make the general architecture concrete — not to prescribe a setup.</p>
+
+<h3 id="the-team">The team</h3>
+
+<p>Reya's quant team uses three role-scoped agents:</p>
+
+<p><strong>Research</strong> — co-develops formal specs (margin models, funding rate mechanisms, risk parameters) with the human. Outputs self-contained specifications that can be implemented without reading the design conversation.</p>
+
+<p><strong>Dev</strong> — translates specs into working implementations across multiple repositories. Surfaces practical questions the spec doesn't answer. Maintains knowledge that persists across sessions.</p>
+
+<p><strong>Audit</strong> — reads deliverables cold. No access to the design conversation. Identifies failure modes, numerical instabilities, parameter sensitivities. Rates findings by severity. Does not suggest fixes — identifies problems only.</p>
+
+<p>The research agent builds deep alignment with the human on mechanism design — the math, the parametrizations, the tradeoffs. The dev agent works from the spec, not from the design conversation. It encounters practical questions (edge cases, data schema mismatches, performance constraints) and writes them to <code>dev/questions/</code> for routing. The audit agent sees the spec and the implementation report with no prior context, which is exactly the cognitive state you want for critical review.</p>
+
+<h3 id="transversal-dev">The transversal dev agent</h3>
+
+<p>This is where "team member, not repo tool" is most visible. The dev agent doesn't live in either repo. It lives in the team's coordination layer and navigates into repos as needed.</p>
+
+<!-- DIAGRAM: Transversal dev flow -->
+<div class="trans-flow">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="tf-box filled">
+      Windsurf skill
+      <div class="sub">@quant-dev</div>
+    </div>
+    <div class="tf-box outlined-green">
+      <span class="green">Claude Code</span>
+      <div class="sub" style="color: var(--gray-50);">CLAUDE.md</div>
+    </div>
+  </div>
+  <div class="tf-arrow">→</div>
+  <div class="tf-box" style="border-color: var(--green);">
+    <span class="green">Dev instructions</span>
+    <div class="sub">+ knowledge/</div>
+    <div style="font-size: 10px; color: var(--gray-40); margin-top: 3px;">on shared filesystem</div>
+  </div>
+  <div class="tf-arrow">→</div>
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="tf-box" style="border-color: var(--teal);"><span class="teal" style="font-family: 'JetBrains Mono', monospace;">reya-quant</span></div>
+    <div class="tf-box" style="border-color: var(--purple);"><span class="purple" style="font-family: 'JetBrains Mono', monospace;">reya-data</span></div>
+  </div>
+</div>
+
+<p>The agent is loaded via a Windsurf global skill (<code>@quant-dev</code>) or a Claude Code <code>CLAUDE.md</code> that acts as a thin pointer to the canonical instructions on the shared filesystem. Both entry points converge on the same role definition and knowledge directory. The canonical instructions live in <code>CLAUDE.md</code> on the shared filesystem — not inside the skill file. Changes to the role instructions propagate automatically. Accumulated knowledge in <code>dev/knowledge/</code> is loaded every session. The agent gets smarter over time without manual context injection. And the entry point can be invoked from any repo: same team member, different codebase.</p>
+
+<h3 id="tooling">Tooling choices</h3>
+
+<p>Research and audit run in Cowork (Claude Desktop projects). They need filesystem access for reading and writing specs, reports, and findings. They don't need terminal access. Cowork's project system gives them persistent instructions and knowledge files scoped to the role.</p>
+
+<p>Dev runs in Windsurf or Claude Code. It needs terminal access for git, python, psql. It needs to navigate codebases, write implementations, run tests. The global skill system (Windsurf) or <code>CLAUDE.md</code> convention (Claude Code) makes it transversal across repos.</p>
+
+<p>Different tools for different roles, unified by the shared filesystem.</p>
+
+<h3 id="lessons">What we learned</h3>
+
+<p><strong>The skill has to be invoked with a concrete task.</strong> On the first message of a Windsurf session, <code>@quant-dev implement phase 2 of the margin validation</code> works. The skill tag alone sometimes doesn't trigger the file-reading chain reliably.</p>
+
+<p><strong>Knowledge builds slowly but compounds fast.</strong> The first few sessions have an empty knowledge directory. By the fifth or sixth session, the agent has accumulated enough cross-repo context that it anticipates integration issues before you raise them.</p>
+
+<p><strong>Cowork project instructions don't auto-propagate.</strong> Unlike the dev role (where CLAUDE.md changes propagate through the skill), research and audit instructions are set in the Cowork UI. Changes require manual updates in the project settings.</p>
+
+<p><strong>The ledger catches drift.</strong> When the dev agent updates the ledger after completing a phase, the research agent picks it up in its next session and adjusts priorities. Without the ledger, you'd be manually relaying status between roles.</p>
+
+<!-- ============================================ -->
+<!-- §4 ORCHESTRATION IN PRACTICE -->
+<!-- ============================================ -->
+<h2 id="orchestration">4. Orchestration in practice</h2>
+
+<p>The principles describe the architecture. This section describes how the pieces move together in daily use.</p>
+
+<h3 id="inter-role">The inter-role interface</h3>
+
+<p>Roles don't communicate directly. They communicate through a shared filesystem, with the human routing between them. The routing protocol is the contract that defines this interface: what document types flow between which roles, through which directories, and how handoffs are synchronized.</p>
+
+<p>In practice, the flows look like this. Research writes a spec to <code>research/specs/</code>. The human reads it, decides it's ready for implementation, and tells the dev agent where to find it. The dev agent implements from the spec. When it encounters ambiguity, it writes a question to <code>dev/questions/</code> — not a message to the research agent, but a file on disk that the human can read, contextualize, and route. When implementation is complete, the dev writes a report to <code>shared/reports/</code>. The human routes it to audit. Audit reads the spec and the report cold, writes findings to <code>audit/findings/</code>. The human routes relevant findings back to research or dev.</p>
+
+<p>Every handoff is a file. Every routing decision is the human's. The filesystem makes the communication observable — you can reconstruct the full conversation between roles by reading the directories.</p>
+
+<p>The ledger synchronizes all of this. It's what tells each role, at the start of a session, "here's what's active, here's what's waiting on you, here's what changed since you last looked." Without the ledger, the filesystem is a collection of files. With it, it's a coordination system.</p>
+
+<h3 id="session-workflow">Session workflow</h3>
+
+<p>A well-structured session follows a predictable arc:</p>
+
+<!-- DIAGRAM: Session cycle -->
+<div class="session-cycle">
+  <div class="sc-step" style="border-color: var(--green);">
+    <div class="step-tag green">ORIENT</div>
+    <div class="step-title">Read state</div>
+    <div class="step-desc">Ledger, collaboration context, knowledge directory. The agent knows what's active, what phase it's in, what's open.</div>
+  </div>
+  <div class="sc-step" style="border-color: var(--teal);">
+    <div class="step-tag teal">WORK</div>
+    <div class="step-title">Execute</div>
+    <div class="step-desc">Navigate to repos, implement from specs, run tests. Write questions to disk when the spec is ambiguous.</div>
+  </div>
+  <div class="sc-step" style="border-color: var(--purple);">
+    <div class="step-tag purple">UPDATE</div>
+    <div class="step-title">Write state</div>
+    <div class="step-desc">Update the ledger with phase transitions, branches created, questions surfaced, results produced.</div>
+  </div>
+  <div class="sc-step" style="border-color: var(--amber);">
+    <div class="step-tag amber">CAPTURE</div>
+    <div class="step-title">Persist knowledge</div>
+    <div class="step-desc">Cross-repo patterns, conventions, failure modes, decisions. The knowledge directory grows into a reference manual.</div>
+  </div>
+</div>
+
+<p>This cycle means each session both consumes and produces context. The agent orients from accumulated knowledge at the start and enriches it at the end.</p>
+
+<h3 id="knowledge-writeback">The knowledge write-back loop</h3>
+
+<p>What the agent captures at end of session matters. The rule of thumb:</p>
+
+<p><strong>Goes to the agent's knowledge directory:</strong> cross-repo patterns (how data flows from service A to service B), implementation conventions that emerged from spec interpretation, environment quirks, failure modes and resolutions, decisions made during implementation that aren't documented in any spec.</p>
+
+<p><strong>Stays in the repo:</strong> code documentation, docstrings, inline comments, CI/CD configuration, repo-specific tooling setup.</p>
+
+<p><strong>Goes to <code>shared/reports/</code>:</strong> implementation reports, validation results, review guides — anything that needs to reach other roles.</p>
+
+<p>Use descriptive filenames. Append to existing files when the topic already has one rather than creating duplicates. The knowledge directory should read like a reference manual over time, not a collection of session logs.</p>
+
+<h3 id="implicit-orch">Toward implicit orchestration</h3>
+
+<p>The session workflow above is largely explicit: the agent reads the ledger because its instructions tell it to, updates state because the role definition says so, captures knowledge because the human asked for it.</p>
+
+<p>The natural endpoint of this architecture is implicit orchestration. If the agent has seen enough sessions, it learns the patterns: "we just finished validation, the next step is to merge the branch and update the ledger." "This implementation surfaced a question about the spec — I should write it to <code>dev/questions/</code> and flag it." "The knowledge I just accumulated about the data pipeline integration should be written back before this session ends."</p>
+
+<p>This is the progression from stage two to stage four described in §1. The agent internalizes the workflow deeply enough that the human discusses the work, and the agent handles the coordination mechanics.</p>
+
+<div class="callout amber-callout">
+  <p>The difficulties are real. Implicit orchestration is only as good as the state it relies on. If the ledger is stale, the agent orients to a world that no longer exists. If the knowledge directory has contradictory entries, the agent inherits confusion. The architecture demands increasing discipline as it grants increasing autonomy — stage one tolerates a messy filesystem; stage four does not.</p>
+  <p>This is worth being honest about. The vision is powerful: a human who talks about intent while the agent handles the mechanics of branches, phases, knowledge capture, and routing. But achieving it requires that the foundational layers — the filesystem structure, the ledger, the knowledge directories — are maintained with genuine discipline. The aspiration is real. So is the cost.</p>
+</div>
+
+<!-- ============================================ -->
+<!-- §5 SETTING UP YOUR OWN -->
+<!-- ============================================ -->
+<h2 id="setup">5. Setting up your own</h2>
+
+<h3 id="entry-points">Entry points</h3>
+
+<p>Two primary entry points can load agents into the role-scoped architecture:</p>
+
+<p><strong>Windsurf global skills</strong> — a thin pointer at <code>~/.windsurf/skills/{skill-name}/SKILL.md</code> that tells the agent where to find its canonical instructions and knowledge on the shared filesystem. Invoked with <code>@skill-name [concrete task]</code>. Ideal for dev agents that need IDE-integrated terminal access.</p>
+
+<p><strong>Claude Code</strong> — reads <code>CLAUDE.md</code> natively from the project root or any directory it's pointed at. When <code>CLAUDE.md</code> lives in the role directory on the shared filesystem, Claude Code becomes the entry point for that role. Ideal for terminal-first workflows and agents that benefit from Claude Code's agentic capabilities (subagent spawning, tool use chains).</p>
+
+<p>Both converge on the same canonical role definition. The entry point is a matter of tooling preference — the architecture is the filesystem, the ledger, and the human context underneath.</p>
+
+<p>For roles that don't need terminal access (design, review), <strong>Cowork</strong> (Claude Desktop projects) provides filesystem access with persistent project-scoped instructions.</p>
+
+<h3 id="mcp-config">MCP configuration</h3>
+
+<p>The Model Context Protocol layer gives agents structured access to external tools. For a team architecture, the key MCP servers are:</p>
+
+<p><strong>Filesystem access</strong> (<code>@modelcontextprotocol/server-filesystem</code>) — gives the agent read/write access to specified directories. Configure it with paths to both the team coordination directory and any repos the agent needs:</p>
+
+<div class="code-block">{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem",
+        "/path/to/team-root",
+        "/path/to/repo-one",
+        "/path/to/repo-two"]
+    }
+  }
+}</div>
+
+<p><strong>Terminal access</strong> (<code>@wonderwhy-er/desktop-commander</code>) — gives the agent shell access. Essential for dev agents that need git, package managers, test runners, database clients.</p>
+
+<p>The scoping principle: give each role the minimum access it needs. Research and audit typically need filesystem only. Dev needs filesystem plus terminal. Over-permissioning creates risk without benefit.</p>
+
+<h3 id="scaffold">Step-by-step scaffold</h3>
+
+<p>Once you've decided on your role separation:</p>
+
+<div class="setup-step">
+  <div class="num green">01</div>
+  <div class="role">Create the directory structure</div>
+  <div class="reason">Start with the filesystem layout from §2. Adjust the role directories to match your actual functions.</div>
+</div>
+<div class="setup-step">
+  <div class="num teal">02</div>
+  <div class="role">Write the routing protocol</div>
+  <div class="reason">A short document that specifies: which role reads from where, which role writes to where, what document types flow between roles.</div>
+</div>
+<div class="setup-step">
+  <div class="num purple">03</div>
+  <div class="role">Write the collaboration context</div>
+  <div class="reason">How you reason, communication preferences, what detail you expect, when to ask vs proceed.</div>
+</div>
+<div class="setup-step">
+  <div class="num amber">04</div>
+  <div class="role">Write role instructions</div>
+  <div class="reason">One canonical file per role. What it reads, what it writes, when it updates the ledger, what knowledge to capture.</div>
+</div>
+<div class="setup-step">
+  <div class="num green">05</div>
+  <div class="role">Initialize the ledger</div>
+  <div class="reason">Start with your current workstreams, phases, open questions. Doesn't need to be comprehensive — needs to be accurate.</div>
+</div>
+<div class="setup-step">
+  <div class="num teal">06</div>
+  <div class="role">Configure entry points</div>
+  <div class="reason">Windsurf skills and/or Claude Code for dev roles. Cowork projects for roles that don't need terminal access. MCP servers for filesystem and terminal.</div>
+</div>
+<div class="setup-step">
+  <div class="num purple">07</div>
+  <div class="role">Run a first session</div>
+  <div class="reason">Give each role a concrete task and observe how it orients. The first sessions reveal gaps in instructions and routing.</div>
+</div>
+
+<h3 id="diagnostic">Diagnostic questions</h3>
+
+<p>The right architecture depends on your team's actual constraints. These questions help determine what structure to adopt:</p>
+
+<p><strong>How many repos does your work span?</strong> If everything lives in one repo, a transversal agent is unnecessary. If you regularly work across two or more, it becomes essential.</p>
+
+<p><strong>What functions do you need separated?</strong> The minimum is design + implementation + review. But you might want domain-specific implementation roles, or separate design from research, or add a documentation role.</p>
+
+<p><strong>Do you need cold review?</strong> If you're doing work where rigor matters — financial models, security-critical code, formal specifications — a review function that sees deliverables without design context is valuable. If your work is more exploratory, you might not need it yet.</p>
+
+<p><strong>What tools does each function need?</strong> Design and review typically need filesystem access only. Implementation needs terminal access, git, language runtimes. Map the tools to the functions.</p>
+
+<p><strong>Where does your cross-cutting knowledge currently live?</strong> If it's in Slack, in someone's head, or nowhere — that's the knowledge a transversal agent will capture. If it's already well-documented in a wiki or shared docs, you might integrate those into the knowledge directory.</p>
+
+<p><strong>How do you currently track project state?</strong> The ledger doesn't replace your project management. It complements it by giving agents a structured way to read and update coordination state.</p>
+
+</main>
+</div>
+
+<!-- SIDEBAR ACTIVE STATE -->
+<script>
+  const links = document.querySelectorAll('.sidebar a');
+  const sections = [];
+
+  links.forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      const el = document.getElementById(href.slice(1));
+      if (el) sections.push({ el, link });
+    }
+  });
+
+  function updateActive() {
+    let current = sections[0];
+    const scrollY = window.scrollY + 100;
+
+    for (const s of sections) {
+      if (s.el.offsetTop <= scrollY) current = s;
+    }
+
+    links.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActive);
+  updateActive();
+</script>
+
+</body>
+</html>
