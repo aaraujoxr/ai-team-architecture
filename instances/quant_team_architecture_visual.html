@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quant Team — Architectural Overview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --green: #00b36b;
+    --green-faint: rgba(0, 179, 107, 0.06);
+    --bg: #0a0a0a;
+    --bg-alt: #0c0c0c;
+    --border: #151515;
+    --text-bright: #f0f0f0;
+    --text-mid: #aaa;
+    --text-body: #777;
+    --text-dim: #555;
+    --text-faint: #333;
+    --purple: #9966cc;
+    --amber: #b38600;
+    --teal: #14b8a6;
+    --red: #ef4444;
+    /* Role colors */
+    --research: #58a6ff;
+    --dev: var(--green);
+    --audit: var(--amber);
+    --human: var(--purple);
+    --shared: #777;
+  }
+
+  /* ===== SHARED SITE NAV ===== */
+  .site-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+  }
+  .site-nav-inner {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .site-nav-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--green);
+    letter-spacing: 0.15em;
+    text-decoration: none;
+  }
+  .site-nav-brand:hover { opacity: 0.8; }
+  .site-nav-links {
+    display: flex;
+    gap: 28px;
+  }
+  .site-nav-links a {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .site-nav-links a:hover { color: var(--text-mid); }
+  .site-nav-links a.active { color: var(--green); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text-bright);
+    line-height: 1.6;
+    padding: 80px 64px 64px 64px;
+  }
+
+  h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  .subtitle {
+    color: var(--text-body);
+    font-size: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  /* Section headers */
+  .section-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section { margin-bottom: 4rem; }
+
+  /* ===== THREE-LAYER DIAGRAM ===== */
+  .layers-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 900px;
+    margin: 0 auto 2rem;
+  }
+
+  .layer {
+    border: 1px solid var(--border);
+    padding: 1.8rem 2rem;
+    position: relative;
+  }
+
+  .layer:first-child { border-radius: 0; }
+  .layer:last-child { border-radius: 0; }
+  .layer + .layer { border-top: none; }
+
+  .layer-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+  }
+
+  .layer-human {
+    background: var(--bg-alt);
+    border-top: 3px solid var(--human);
+  }
+  .layer-human .layer-label { color: var(--human); }
+
+  .layer-state {
+    background: var(--bg-alt);
+    border-top: 3px solid var(--red);
+  }
+  .layer-state .layer-label { color: var(--red); }
+
+  .layer-agent {
+    background: var(--bg-alt);
+    border-top: 3px solid var(--research);
+  }
+  .layer-agent .layer-label { color: var(--research); }
+
+  .layer-contents {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .layer-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+
+  .layer-item.primary {
+    border-color: var(--human);
+    color: var(--human);
+  }
+
+  .layer-arrow {
+    color: var(--text-body);
+    font-size: 0.8rem;
+  }
+
+  .layer-note {
+    color: var(--text-body);
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-left: 0.5rem;
+  }
+
+  /* ===== ROLE CARDS ===== */
+  .roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .role-card {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 1.8rem;
+    border-top: 3px solid;
+  }
+
+  .role-card.research { border-top-color: var(--research); }
+  .role-card.dev { border-top-color: var(--dev); }
+  .role-card.audit { border-top-color: var(--audit); }
+  .role-card.human { border-top-color: var(--human); }
+
+  .role-name {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .role-card.research .role-name { color: var(--research); }
+  .role-card.dev .role-name { color: var(--dev); }
+  .role-card.audit .role-name { color: var(--audit); }
+  .role-card.human .role-name { color: var(--human); }
+
+  .role-purpose {
+    color: var(--text-body);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .role-tool {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-body);
+    background: var(--bg);
+    border-radius: 0;
+    padding: 0.25rem 0.6rem;
+    display: inline-block;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+  }
+
+  .perm-section {
+    margin-top: 0.7rem;
+  }
+
+  .perm-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  .perm-header.can { color: var(--green); }
+  .perm-header.cannot { color: var(--red); }
+  .perm-header.reads { color: var(--research); }
+  .perm-header.writes { color: var(--amber); }
+
+  .perm-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 0.8rem;
+  }
+
+  .perm-list li {
+    font-size: 0.8rem;
+    padding: 0.2rem 0 0.2rem 1.3rem;
+    position: relative;
+    color: var(--text-body);
+  }
+
+  .perm-list li::before {
+    position: absolute;
+    left: 0;
+    font-size: 0.75rem;
+  }
+
+  .perm-list.can li::before { content: '✓'; color: var(--green); }
+  .perm-list.cannot li::before { content: '✗'; color: var(--red); }
+  .perm-list.reads li::before { content: '→'; color: var(--research); }
+  .perm-list.writes li::before { content: '←'; color: var(--amber); }
+
+  /* ===== ROUTING FLOW DIAGRAM ===== */
+  .flow-diagram {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 2.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* SVG-based routing diagram */
+  .routing-svg {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+    display: block;
+  }
+
+  /* ===== FILESYSTEM MAP ===== */
+  .fs-tree {
+    background: #070707;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.8;
+    max-width: 700px;
+    overflow-x: auto;
+  }
+
+  .fs-line { white-space: pre; }
+  .fs-dir { color: var(--green); font-weight: 600; }
+  .fs-file { color: var(--text-bright); }
+  .fs-arch { color: var(--red); }
+
+  .fs-badge {
+    font-size: 0.65rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 0;
+    margin-left: 0.7rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    vertical-align: middle;
+    border: 1px solid;
+  }
+
+  .badge-immutable { background: rgba(239, 68, 68, 0.12); color: var(--red); border-color: rgba(239, 68, 68, 0.3); }
+  .badge-research { background: rgba(88, 166, 255, 0.12); color: var(--research); border-color: rgba(88, 166, 255, 0.25); }
+  .badge-dev { background: rgba(0, 179, 107, 0.12); color: var(--dev); border-color: rgba(0, 179, 107, 0.25); }
+  .badge-audit { background: rgba(179, 134, 0, 0.12); color: var(--audit); border-color: rgba(179, 134, 0, 0.25); }
+  .badge-shared { background: rgba(119, 119, 119, 0.12); color: var(--shared); border-color: rgba(119, 119, 119, 0.25); }
+
+  /* ===== ACCESS MATRIX ===== */
+  .matrix-container {
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+  }
+
+  .access-matrix {
+    border-collapse: collapse;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.85rem;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .access-matrix th {
+    background: var(--bg-alt);
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .access-matrix td {
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .access-matrix td:first-child {
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .cell-rw { color: var(--green); font-weight: 600; }
+  .cell-r { color: var(--research); }
+  .cell-none { color: var(--text-dim); }
+  .cell-own { color: var(--human); font-weight: 600; }
+
+  /* ===== HANDOFF FLOWS ===== */
+  .handoffs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .handoff {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 1.5rem 1.8rem;
+  }
+
+  .handoff-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .handoff-arrow {
+    font-size: 1.1rem;
+  }
+
+  .handoff-steps {
+    list-style: none;
+    padding: 0;
+    counter-reset: step;
+  }
+
+  .handoff-steps li {
+    font-size: 0.8rem;
+    padding: 0.3rem 0 0.3rem 1.8rem;
+    position: relative;
+    color: var(--text-body);
+    margin-bottom: 0.3rem;
+  }
+
+  .handoff-steps li::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    text-align: center;
+    line-height: 1.2rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-body);
+    top: 0.15rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ===== PROTECTION RULES ===== */
+  .protection-box {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 1.8rem 2rem;
+    max-width: 900px;
+    margin-bottom: 1.5rem;
+  }
+
+  .protection-title {
+    color: var(--red);
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .protection-rule {
+    font-size: 0.85rem;
+    padding: 0.4rem 0 0.4rem 1.5rem;
+    position: relative;
+    color: var(--text-body);
+    border-top: 1px solid var(--border);
+  }
+
+  .protection-rule:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .protection-rule::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 4px;
+    height: 4px;
+    background: var(--red);
+    opacity: 0.6;
+  }
+
+  /* ===== LEGEND ===== */
+  .legend {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    padding: 1.2rem 1.5rem;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    font-size: 0.8rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+  }
+
+  /* ===== TABS ===== */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: transparent;
+    border: none;
+    color: var(--text-body);
+    padding: 0.8rem 1.4rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .tab-btn:hover { color: var(--text-bright); }
+
+  .tab-btn.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  .tab-content { display: none; padding-top: 2rem; }
+  .tab-content.active { display: block; }
+
+  /* ===== ORIENTATION SEQUENCE ===== */
+  .orient-sequence {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+  }
+
+  .orient-step {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 0.7rem 1.2rem;
+    font-size: 0.8rem;
+    text-align: center;
+    min-width: 140px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+
+  .orient-step .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-body);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .orient-connector {
+    color: var(--text-body);
+    font-size: 1.2rem;
+    padding: 0 0.4rem;
+  }
+
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <a href="../publish/index.html" class="site-nav-brand">REYA NETWORK</a>
+    <div class="site-nav-links">
+      <a href="../publish/ai_team_architecture.html">Overview</a>
+      <a href="../publish/ai_team_architecture_reference.html">Reference</a>
+      <a href="#" class="active">Quant Team</a>
+    </div>
+  </div>
+</nav>
+
+<h1>Quant Team — Architectural Overview</h1>
+<p class="subtitle">Three-role AI team coordinated through filesystem protocols. Human routes all communication.</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--human)"></div> Human (Artur)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--research)"></div> Research</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--dev)"></div> Dev</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--audit)"></div> Audit</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Immutable / Protected</div>
+</div>
+
+<!-- TAB NAVIGATION -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('layers')">Three-Component Model</button>
+  <button class="tab-btn" onclick="showTab('roles')">Roles &amp; Permissions</button>
+  <button class="tab-btn" onclick="showTab('routing')">Routing &amp; Handoffs</button>
+  <button class="tab-btn" onclick="showTab('filesystem')">Filesystem Map</button>
+  <button class="tab-btn" onclick="showTab('protection')">Protection Rules</button>
+</div>
+
+<!-- ==================== TAB 1: THREE-COMPONENT MODEL ==================== -->
+<div id="tab-layers" class="tab-content active">
+  <div class="section">
+    <div class="section-title">Three-Component Model</div>
+
+    <div class="layers-container">
+      <!-- Human Layer -->
+      <div class="layer layer-human">
+        <div class="layer-label">Human Collaboration Context</div>
+        <div class="layer-contents">
+          <div class="layer-item primary">collaboration_context.md</div>
+          <span class="layer-note">Defines how work happens. Owned by Artur. Agents read, never modify.</span>
+        </div>
+      </div>
+
+      <!-- State Layer -->
+      <div class="layer layer-state">
+        <div class="layer-label">Team State</div>
+        <div class="layer-contents">
+          <div class="layer-item" style="border-color:var(--red); color:var(--red);">ledger.md</div>
+          <span class="layer-note">Single source of truth for what's happening across all roles. Currently human-maintained; agents nudge when stale.</span>
+        </div>
+      </div>
+
+      <!-- Agent Layer -->
+      <div class="layer layer-agent">
+        <div class="layer-label">Agent Knowledge &amp; Role Directories</div>
+        <div class="layer-contents">
+          <div class="layer-item" style="border-color:var(--research)">research/</div>
+          <div class="layer-item" style="border-color:var(--dev)">dev/</div>
+          <div class="layer-item" style="border-color:var(--audit)">audit/</div>
+          <div class="layer-item" style="border-color:var(--shared)">shared/reports/</div>
+          <div class="layer-item" style="border-color:var(--shared)">data/</div>
+        </div>
+        <div style="margin-top:0.8rem;">
+          <span class="layer-note">Each role owns its directory. Cross-role communication happens through shared surfaces, routed by Artur.</span>
+        </div>
+      </div>
+
+      <!-- Routing Protocol (alongside agent layer) -->
+      <div style="margin-top:1.5rem; padding:1.2rem 1.5rem; background:var(--bg-alt); border:1px solid var(--border); border-top: 3px solid var(--amber);">
+        <div style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.12em; font-weight:700; color:var(--amber); margin-bottom:0.6rem;">Team Orchestration Infrastructure</div>
+        <div style="font-size:0.85rem; color:var(--text-body);"><strong>routing_protocol.md</strong> — defines how agents handoff work, how context flows between roles, and where communication surfaces live.</div>
+      </div>
+    </div>
+
+    <div style="max-width:900px; margin:0 auto;">
+      <p style="font-size:0.85rem; color:var(--text-body); margin-bottom:1rem; margin-top:1.5rem;">
+        <strong style="color:var(--text-bright)">Key principle:</strong> the three-component skeleton is fixed infrastructure.
+        Agents operate freely within their agent-layer directories but cannot modify the human collaboration context or team state.
+        The human context defines *how* the team works; the team state tracks *where* they are; the agent layer is *where work happens*.
+      </p>
+
+      <div style="font-size:0.85rem; color:var(--text-body); margin-bottom:1rem;">
+        <strong style="color:var(--text-bright)">Session orientation sequence (all roles):</strong>
+      </div>
+      <div class="orient-sequence">
+        <div class="orient-step">
+          <span class="step-num">Step 1</span>
+          collaboration_context.md
+        </div>
+        <span class="orient-connector">→</span>
+        <div class="orient-step">
+          <span class="step-num">Step 2</span>
+          ledger.md
+        </div>
+        <span class="orient-connector">→</span>
+        <div class="orient-step">
+          <span class="step-num">Step 3</span>
+          routing_protocol.md
+        </div>
+        <span class="orient-connector">→</span>
+        <div class="orient-step">
+          <span class="step-num">Step 4</span>
+          role knowledge/
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 2: ROLES & PERMISSIONS ==================== -->
+<div id="tab-roles" class="tab-content">
+  <div class="section">
+    <div class="section-title">Role Definitions &amp; Access Boundaries</div>
+
+    <div class="roles-grid">
+      <!-- HUMAN -->
+      <div class="role-card human">
+        <div class="role-name">Artur (Human Router)</div>
+        <div class="role-purpose">Integration layer. Decides what context each role needs, routes questions, overrides when necessary.</div>
+        <div class="perm-section">
+          <div class="perm-header can">Owns</div>
+          <ul class="perm-list can">
+            <li>All architectural files (ledger, routing protocol, collaboration context)</li>
+            <li>Routing decisions between roles</li>
+            <li>Knowledge directories (any role)</li>
+            <li>Strategic decisions on workstream direction</li>
+          </ul>
+        </div>
+        <div class="perm-section">
+          <div class="perm-header reads">Reads</div>
+          <ul class="perm-list reads">
+            <li>Everything — full filesystem access</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- RESEARCH -->
+      <div class="role-card research">
+        <div class="role-name">Research</div>
+        <div class="role-purpose">Co-develops models, derivations, specs. Deep alignment with Artur's reasoning.</div>
+        <div class="role-tool">Cowork</div>
+        <div class="perm-section">
+          <div class="perm-header can">Can do</div>
+          <ul class="perm-list can">
+            <li>Write formal specs to research/specs/</li>
+            <li>Accumulate knowledge in research/knowledge/</li>
+            <li>Use pseudocode in specs</li>
+            <li>Nudge Artur when ledger is stale</li>
+          </ul>
+        </div>
+        <div class="perm-section">
+          <div class="perm-header cannot">Cannot do</div>
+          <ul class="perm-list cannot">
+            <li>Write production code</li>
+            <li>Audit other roles' work</li>
+            <li>Make implementation architecture decisions</li>
+            <li>Write to dev/ or audit/ directories</li>
+            <li>Modify ledger, routing protocol, or collaboration context</li>
+            <li>Read or explore any directory outside access scope</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- DEV -->
+      <div class="role-card dev">
+        <div class="role-name">Dev</div>
+        <div class="role-purpose">Translates specs into implementations. Practical engineering focus.</div>
+        <div class="role-tool">Windsurf</div>
+        <div class="perm-section">
+          <div class="perm-header can">Can do</div>
+          <ul class="perm-list can">
+            <li>Write implementations to dev/</li>
+            <li>Write questions to dev/questions/</li>
+            <li>Write reports to dev/reports/</li>
+            <li>Accumulate knowledge in dev/knowledge/</li>
+            <li>Run terminal commands, tests, git, PostgreSQL</li>
+            <li>Nudge Artur when ledger is stale</li>
+          </ul>
+        </div>
+        <div class="perm-section">
+          <div class="perm-header cannot">Cannot do</div>
+          <ul class="perm-list cannot">
+            <li>Redesign the quant model</li>
+            <li>Review research deliverables critically</li>
+            <li>Make quant design decisions beyond spec</li>
+            <li>Write to research/ or audit/ directories</li>
+            <li>Modify ledger, routing protocol, or collaboration context</li>
+            <li>Read or explore any directory outside access scope</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- AUDIT -->
+      <div class="role-card audit">
+        <div class="role-name">Audit</div>
+        <div class="role-purpose">Adversarial review. Sees work cold — no reasoning chain, no alignment.</div>
+        <div class="role-tool">Cowork</div>
+        <div class="perm-section">
+          <div class="perm-header can">Can do</div>
+          <ul class="perm-list can">
+            <li>Write audit reports to audit/reports/</li>
+            <li>Write findings to audit/findings/</li>
+            <li>Refine review methodology in audit/knowledge/</li>
+            <li>Read any file Artur directs it to</li>
+            <li>Nudge Artur when ledger is stale</li>
+          </ul>
+        </div>
+        <div class="perm-section">
+          <div class="perm-header cannot">Cannot do</div>
+          <ul class="perm-list cannot">
+            <li>Suggest fixes or alternative designs</li>
+            <li>Build alignment with research reasoning</li>
+            <li>Read research/ internal files or dev/knowledge/</li>
+            <li>Read research or dev conversations</li>
+            <li>Write to research/ or dev/ directories</li>
+            <li>Modify ledger, routing protocol, or collaboration context</li>
+            <li>Read or explore any directory outside access scope</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCESS MATRIX -->
+    <div class="section-title" style="margin-top:2.5rem;">Access Matrix</div>
+    <div class="matrix-container">
+      <table class="access-matrix">
+        <thead>
+          <tr>
+            <th>Directory / File</th>
+            <th style="color:var(--research)">Research</th>
+            <th style="color:var(--dev)">Dev</th>
+            <th style="color:var(--audit)">Audit</th>
+            <th style="color:var(--human)">Artur</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ledger.md</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-own">owner</td>
+          </tr>
+          <tr>
+            <td>collaboration_context.md</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-own">owner</td>
+          </tr>
+          <tr>
+            <td>routing_protocol.md</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-own">owner</td>
+          </tr>
+          <tr>
+            <td>shared/reports/</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-own">owner</td>
+          </tr>
+          <tr>
+            <td>research/ROLE.md</td>
+            <td class="cell-r">read</td>
+            <td class="cell-none">—</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>research/specs/</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-r">read</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>research/knowledge/</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-none">—</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">owner</td>
+          </tr>
+          <tr>
+            <td>research/questions/</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-none">—</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>dev/ROLE.md</td>
+            <td class="cell-none">—</td>
+            <td class="cell-r">read</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>dev/implementations/</td>
+            <td class="cell-none">—</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>dev/questions/</td>
+            <td class="cell-r">read</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>dev/reports/</td>
+            <td class="cell-none">—</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>dev/knowledge/</td>
+            <td class="cell-none">—</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">owner</td>
+          </tr>
+          <tr>
+            <td>audit/ROLE.md</td>
+            <td class="cell-none">—</td>
+            <td class="cell-none">—</td>
+            <td class="cell-r">read</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>audit/reports/</td>
+            <td class="cell-none">—</td>
+            <td class="cell-none">—</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>audit/findings/</td>
+            <td class="cell-r">read</td>
+            <td class="cell-none">—</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-own">read</td>
+          </tr>
+          <tr>
+            <td>audit/knowledge/</td>
+            <td class="cell-none">—</td>
+            <td class="cell-none">—</td>
+            <td class="cell-rw">read/write</td>
+            <td class="cell-own">owner</td>
+          </tr>
+          <tr>
+            <td>data/</td>
+            <td class="cell-r">read</td>
+            <td class="cell-r">read</td>
+            <td class="cell-none">—</td>
+            <td class="cell-own">owner</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.8rem; color:var(--text-body); max-width:900px;">
+      <strong>Blanket constraint:</strong> Every cell marked "—" is enforced by instruction: <em>"Everything else in the team folder is outside your role. Do not read, browse, or explore directories or files beyond this scope."</em>
+    </p>
+  </div>
+</div>
+
+<!-- ==================== TAB 3: ROUTING & HANDOFFS ==================== -->
+<div id="tab-routing" class="tab-content">
+  <div class="section">
+    <div class="section-title">Routing Topology</div>
+
+    <div class="flow-diagram">
+      <svg class="routing-svg" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Artur hub -->
+        <circle cx="400" cy="200" r="55" fill="rgba(153, 102, 204, 0.12)" stroke="#9966cc" stroke-width="2"/>
+        <text x="400" y="195" text-anchor="middle" fill="#9966cc" font-size="15" font-weight="700">Artur</text>
+        <text x="400" y="213" text-anchor="middle" fill="#777" font-size="10">routes all work</text>
+
+        <!-- Research node -->
+        <circle cx="150" cy="100" r="45" fill="rgba(88,166,255,0.1)" stroke="#58a6ff" stroke-width="1.5"/>
+        <text x="150" y="97" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="600">Research</text>
+        <text x="150" y="113" text-anchor="middle" fill="#777" font-size="9">Cowork</text>
+
+        <!-- Dev node -->
+        <circle cx="150" cy="310" r="45" fill="rgba(0,179,107,0.1)" stroke="#00b36b" stroke-width="1.5"/>
+        <text x="150" y="307" text-anchor="middle" fill="#00b36b" font-size="13" font-weight="600">Dev</text>
+        <text x="150" y="323" text-anchor="middle" fill="#777" font-size="9">Windsurf</text>
+
+        <!-- Audit node -->
+        <circle cx="650" cy="200" r="45" fill="rgba(179, 134, 0, 0.1)" stroke="#b38600" stroke-width="1.5"/>
+        <text x="650" y="197" text-anchor="middle" fill="#b38600" font-size="13" font-weight="600">Audit</text>
+        <text x="650" y="213" text-anchor="middle" fill="#777" font-size="9">Cowork</text>
+
+        <!-- Defs for arrowheads -->
+        <defs>
+          <marker id="arrow-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#9966cc"/>
+          </marker>
+          <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/>
+          </marker>
+          <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#00b36b"/>
+          </marker>
+          <marker id="arrow-amber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#b38600"/>
+          </marker>
+        </defs>
+
+        <!-- Artur ↔ Research -->
+        <line x1="350" y1="170" x2="200" y2="120" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-blue)"/>
+        <line x1="195" y1="130" x2="345" y2="178" stroke="#9966cc" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-purple)"/>
+        <text x="255" y="132" text-anchor="middle" fill="#777" font-size="8.5" transform="rotate(-22 255 132)">specs, questions</text>
+        <text x="285" y="170" text-anchor="middle" fill="#777" font-size="8.5" transform="rotate(-22 285 170)">routed findings, context</text>
+
+        <!-- Artur ↔ Dev -->
+        <line x1="350" y1="230" x2="200" y2="285" stroke="#00b36b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-green)"/>
+        <line x1="195" y1="277" x2="345" y2="222" stroke="#9966cc" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-purple)"/>
+        <text x="255" y="273" text-anchor="middle" fill="#777" font-size="8.5" transform="rotate(22 255 273)">implementations, reports, questions</text>
+        <text x="285" y="240" text-anchor="middle" fill="#777" font-size="8.5" transform="rotate(22 285 240)">spec paths, routed answers</text>
+
+        <!-- Artur ↔ Audit -->
+        <line x1="455" y1="200" x2="600" y2="200" stroke="#b38600" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-amber)"/>
+        <line x1="605" y1="190" x2="455" y2="190" stroke="#9966cc" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-purple)"/>
+        <text x="530" y="215" text-anchor="middle" fill="#777" font-size="8.5">reports, findings</text>
+        <text x="530" y="185" text-anchor="middle" fill="#777" font-size="8.5">deliverable paths to review</text>
+
+        <!-- NO direct connections between agents -->
+        <line x1="195" y1="115" x2="605" y2="195" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,5" opacity="0.3"/>
+        <text x="420" y="140" text-anchor="middle" fill="#ef4444" font-size="9" opacity="0.6">no direct communication</text>
+
+        <line x1="195" y1="300" x2="605" y2="210" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,5" opacity="0.3"/>
+
+        <line x1="150" y1="145" x2="150" y2="265" stroke="#ef4444" stroke-width="1" stroke-dasharray="3,5" opacity="0.3"/>
+        <text x="130" y="210" text-anchor="middle" fill="#ef4444" font-size="9" opacity="0.6" transform="rotate(-90 130 210)">no direct communication</text>
+      </svg>
+    </div>
+
+    <div class="section-title" style="margin-top:2.5rem;">Handoff Flows</div>
+    <div class="handoffs">
+      <div class="handoff">
+        <div class="handoff-title">
+          <span style="color:var(--research)">Research</span>
+          <span class="handoff-arrow">→</span>
+          <span style="color:var(--dev)">Dev</span>
+          <span style="color:var(--text-body); font-size:0.8rem; font-weight:400; margin-left:0.4rem;">(spec handoff)</span>
+        </div>
+        <ol class="handoff-steps">
+          <li>Research writes spec to research/specs/</li>
+          <li>Artur reviews and decides spec is implementation-ready</li>
+          <li>Artur opens Dev session, points to spec file path</li>
+          <li>Dev reads spec as source of truth, implements</li>
+        </ol>
+      </div>
+      <div class="handoff">
+        <div class="handoff-title">
+          <span style="color:var(--dev)">Dev</span>
+          <span class="handoff-arrow">→</span>
+          <span style="color:var(--research)">Research</span>
+          <span style="color:var(--text-body); font-size:0.8rem; font-weight:400; margin-left:0.4rem;">(implementation question)</span>
+        </div>
+        <ol class="handoff-steps">
+          <li>Dev encounters ambiguity in spec during implementation</li>
+          <li>Dev writes question to dev/questions/ with full context</li>
+          <li>Artur reads question, decides it's a research question</li>
+          <li>Artur opens Research session, points to question file</li>
+        </ol>
+      </div>
+      <div class="handoff">
+        <div class="handoff-title">
+          <span style="color:var(--research)">Research</span>
+          <span class="handoff-arrow">→</span>
+          <span style="color:var(--audit)">Audit</span>
+          <span style="color:var(--text-body); font-size:0.8rem; font-weight:400; margin-left:0.4rem;">(audit request)</span>
+        </div>
+        <ol class="handoff-steps">
+          <li>Spec or implementation reaches ship-ready state</li>
+          <li>Artur decides it's stable enough for critical review</li>
+          <li>Artur opens Audit session, points to deliverable path(s)</li>
+          <li>Audit reads deliverable cold — no prior context</li>
+        </ol>
+      </div>
+      <div class="handoff">
+        <div class="handoff-title">
+          <span style="color:var(--audit)">Audit</span>
+          <span class="handoff-arrow">→</span>
+          <span style="color:var(--research)">Research</span>
+          <span style="color:var(--text-body); font-size:0.8rem; font-weight:400; margin-left:0.4rem;">(finding response)</span>
+        </div>
+        <ol class="handoff-steps">
+          <li>Audit writes finding to audit/findings/ with severity</li>
+          <li>Artur reads audit report, identifies findings needing response</li>
+          <li>Artur opens Research session, points to specific finding</li>
+          <li>Research addresses finding within their conversation</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 4: FILESYSTEM MAP ==================== -->
+<div id="tab-filesystem" class="tab-content">
+  <div class="section">
+    <div class="section-title">Filesystem Layout</div>
+    <div class="fs-tree">
+<div class="fs-line"><span class="fs-dir">quant-team/</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">├── <span class="fs-arch">collaboration_context.md</span> <span class="fs-badge badge-immutable">IMMUTABLE</span> <span style="color:var(--text-body)">← human collaboration context</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">├── <span class="fs-arch">routing_protocol.md</span> <span class="fs-badge badge-immutable">IMMUTABLE</span> <span style="color:var(--text-body)">← team orchestration</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">├── <span class="fs-arch">ledger.md</span> <span class="fs-badge badge-immutable">IMMUTABLE</span> <span style="color:var(--text-body)">← team state, Artur-only</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">├── <span class="fs-dir">shared/</span></div>
+<div class="fs-line">│   └── <span class="fs-dir">reports/</span> <span class="fs-badge badge-shared">ALL READ</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">├── <span class="fs-dir" style="color:var(--research)">research/</span></div>
+<div class="fs-line">│   ├── <span class="fs-file">ROLE.md</span> <span class="fs-badge badge-research">R: r</span></div>
+<div class="fs-line">│   ├── <span class="fs-dir">specs/</span> <span class="fs-badge badge-research">R: rw</span> <span class="fs-badge badge-dev">D: r</span></div>
+<div class="fs-line">│   ├── <span class="fs-dir">knowledge/</span> <span class="fs-badge badge-research">R: rw</span></div>
+<div class="fs-line">│   └── <span class="fs-dir">questions/</span> <span class="fs-badge badge-research">R: rw</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">├── <span class="fs-dir" style="color:var(--dev)">dev/</span></div>
+<div class="fs-line">│   ├── <span class="fs-file">ROLE.md</span> <span class="fs-badge badge-dev">D: r</span></div>
+<div class="fs-line">│   ├── <span class="fs-dir">knowledge/</span> <span class="fs-badge badge-dev">D: rw</span></div>
+<div class="fs-line">│   ├── <span class="fs-dir">implementations/</span> <span class="fs-badge badge-dev">D: rw</span></div>
+<div class="fs-line">│   └── <span class="fs-dir">questions/</span> <span class="fs-badge badge-dev">D: rw</span> <span class="fs-badge badge-research">R: r</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">├── <span class="fs-dir" style="color:var(--audit)">audit/</span></div>
+<div class="fs-line">│   ├── <span class="fs-file">ROLE.md</span> <span class="fs-badge badge-audit">A: r</span></div>
+<div class="fs-line">│   ├── <span class="fs-dir">reports/</span> <span class="fs-badge badge-audit">A: rw</span></div>
+<div class="fs-line">│   ├── <span class="fs-dir">findings/</span> <span class="fs-badge badge-audit">A: rw</span> <span class="fs-badge badge-research">R: r</span></div>
+<div class="fs-line">│   └── <span class="fs-dir">knowledge/</span> <span class="fs-badge badge-audit">A: rw</span></div>
+<div class="fs-line">│</div>
+<div class="fs-line">└── <span class="fs-dir">data/</span> <span class="fs-badge badge-research">R: r</span> <span class="fs-badge badge-dev">D: r</span></div>
+    </div>
+    <p style="font-size:0.8rem; color:var(--text-body); margin-top:1rem; max-width:700px;">
+      <strong>R</strong> = Research, <strong>D</strong> = Dev, <strong>A</strong> = Audit. <strong>rw</strong> = read/write, <strong>r</strong> = read only.
+      Unlabeled directories are invisible to the role — blanket negative constraint applies.
+    </p>
+  </div>
+</div>
+
+<!-- ==================== TAB 5: PROTECTION RULES ==================== -->
+<div id="tab-protection" class="tab-content">
+  <div class="section">
+    <div class="section-title">Architectural Protection Rules</div>
+
+    <div class="protection-box">
+      <div class="protection-title">Immutable Infrastructure</div>
+      <p style="font-size:0.85rem; color:var(--text-body); margin-bottom:1rem;">
+        The three-component skeleton is fixed. Agents operate freely within their designated areas but cannot modify the infrastructure that defines how the team works.
+      </p>
+      <div class="protection-rule">No agent may modify <strong>ledger.md</strong> — agents nudge Artur when it's stale</div>
+      <div class="protection-rule">No agent may modify <strong>collaboration_context.md</strong></div>
+      <div class="protection-rule">No agent may modify <strong>routing_protocol.md</strong></div>
+      <div class="protection-rule">No agent may write outside its designated write scope</div>
+      <div class="protection-rule">No agent may read or explore directories outside its access scope</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.5rem; max-width:900px; margin-top:2rem;">
+      <div style="background:var(--bg-alt); border:1px solid var(--border); border-radius:0; padding:1.5rem;">
+        <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.8rem; color:var(--amber);">Why these rules exist</div>
+        <p style="font-size:0.8rem; color:var(--text-body);">
+          The threat model is <strong>drift and confusion</strong>, not adversarial attack. Agents aren't trying to break things — they lose track of boundaries over long sessions, especially when context is large. The rules prevent:
+        </p>
+        <ul style="font-size:0.8rem; color:var(--text-body); padding-left:1.3rem; margin-top:0.7rem;">
+          <li>Alignment drift when roles read each other's reasoning</li>
+          <li>Ledger corruption from well-intentioned but incorrect updates</li>
+          <li>Scope creep when agents "helpfully" fix things outside their domain</li>
+        </ul>
+      </div>
+      <div style="background:var(--bg-alt); border:1px solid var(--border); border-radius:0; padding:1.5rem;">
+        <div style="font-weight:600; font-size:0.95rem; margin-bottom:0.8rem; color:var(--green);">How they're enforced today</div>
+        <ul style="font-size:0.8rem; color:var(--text-body); padding-left:1.3rem;">
+          <li><strong>Instruction-level constraints</strong> — explicit scope tables and blanket negative constraints in every role's project instructions</li>
+          <li><strong>Routing protocol reference</strong> — the access matrix is the canonical source; if a path isn't listed, it's off-limits</li>
+          <li><strong>Git safety net</strong> — all changes are version-controlled; unauthorized modifications are reversible</li>
+        </ul>
+        <div style="margin-top:1rem; padding:0.7rem 0.9rem; background:rgba(88, 166, 255, 0.1); border-radius:0; font-size:0.8rem; color:var(--research); border: 1px solid rgba(88, 166, 255, 0.25);">
+          <strong>Future:</strong> per-project MCP scoping could enforce boundaries at the tool level rather than instruction level.
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:2.5rem; max-width:900px;">
+      <div class="section-title">Cognitive Mode Separation</div>
+      <p style="font-size:0.85rem; color:var(--text-body); margin-bottom:1.5rem;">
+        Role boundaries exist to prevent alignment drift, not security breaches. Each role operates in a distinct cognitive mode:
+      </p>
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1.5rem;">
+        <div style="background:var(--bg-alt); border:1px solid var(--border); border-top:3px solid var(--research); border-radius:0; padding:1.3rem; text-align:center;">
+          <div style="font-weight:600; color:var(--research); margin-bottom:0.4rem;">Research</div>
+          <div style="font-size:0.8rem; color:var(--text-body); line-height:1.6;">Deep alignment mode. Co-develops reasoning with Artur. Knows the "why" behind every decision.</div>
+        </div>
+        <div style="background:var(--bg-alt); border:1px solid var(--border); border-top:3px solid var(--dev); border-radius:0; padding:1.3rem; text-align:center;">
+          <div style="font-weight:600; color:var(--dev); margin-bottom:0.4rem;">Dev</div>
+          <div style="font-size:0.8rem; color:var(--text-body); line-height:1.6;">Practical implementation mode. Sees specs cold. Treats them as source of truth without questioning the model.</div>
+        </div>
+        <div style="background:var(--bg-alt); border:1px solid var(--border); border-top:3px solid var(--audit); border-radius:0; padding:1.3rem; text-align:center;">
+          <div style="font-weight:600; color:var(--audit); margin-bottom:0.4rem;">Audit</div>
+          <div style="font-size:0.8rem; color:var(--text-body); line-height:1.6;">Adversarial review mode. Sees deliverables cold. No alignment with the reasoning that produced them.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

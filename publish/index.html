@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Team Architecture</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --green: #00b36b;
+            --green-faint: rgba(0, 179, 107, 0.06);
+            --bg: #0a0a0a;
+            --bg-alt: #0c0c0c;
+            --border: #151515;
+            --text-bright: #f0f0f0;
+            --text-mid: #aaa;
+            --text-body: #777;
+            --text-dim: #555;
+            --text-faint: #333;
+            --purple: #9966cc;
+            --amber: #b38600;
+            --teal: #14b8a6;
+            --red: #ef4444;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text-bright);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation bar */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+        }
+
+        .nav-brand {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--green);
+            letter-spacing: 0.15em;
+            font-weight: 400;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-mid);
+        }
+
+        /* Main content area */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 48px;
+            padding: 0 40px;
+        }
+
+        /* Hero section */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 50vh;
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: 'Source Serif 4', serif;
+            font-size: 56px;
+            font-weight: 400;
+            color: var(--text-bright);
+            margin-bottom: 24px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            color: var(--text-dim);
+            max-width: 700px;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .separator {
+            width: 36px;
+            height: 2px;
+            background: var(--green);
+            opacity: 0.4;
+            margin: 0 auto 32px;
+        }
+
+        .author {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-faint);
+            letter-spacing: 0.05em;
+        }
+
+        /* Cards grid */
+        .cards-container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto 80px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .card {
+            background: var(--bg);
+            padding: 40px 36px;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.2s ease;
+        }
+
+        .card:hover {
+            background: var(--bg-alt);
+        }
+
+        .card-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-faint);
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+        }
+
+        .card-title {
+            font-family: 'Source Serif 4', serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-bright);
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .card-description {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: var(--text-body);
+            margin-bottom: 24px;
+            flex: 1;
+            line-height: 1.6;
+        }
+
+        .card-link {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--green);
+            text-decoration: none;
+            transition: text-decoration 0.2s ease;
+            align-self: flex-start;
+        }
+
+        .card-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 0;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-faint);
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-brand">REYA NETWORK</div>
+        <ul class="nav-links">
+            <li><a href="ai_team_architecture.html">Overview</a></li>
+            <li><a href="ai_team_architecture_reference.html">Reference</a></li>
+            <li><a href="../instances/quant_team_architecture_visual.html">Quant Team</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <h1>AI Team Architecture</h1>
+            <p>Agents as team members, not repo tools. A coordination framework grounded in design, not tooling.</p>
+            <div class="separator"></div>
+            <div class="author">Artur Ferreira de Araujo · 2026</div>
+        </section>
+
+        <div class="cards-container">
+            <div class="card">
+                <div class="card-number">01 / PRESENTATION</div>
+                <div class="card-title">AI Team Architecture</div>
+                <div class="card-description">The argument in 17 slides. Design choices, principles, and the coordination model — from the problem to the practice.</div>
+                <a href="ai_team_architecture.html" class="card-link">View →</a>
+            </div>
+
+            <div class="card">
+                <div class="card-number">02 / REFERENCE</div>
+                <div class="card-title">Reference Document</div>
+                <div class="card-description">The full architecture. Principles, worked example, orchestration patterns, and a step-by-step scaffold for setting up your own.</div>
+                <a href="ai_team_architecture_reference.html" class="card-link">View →</a>
+            </div>
+
+            <div class="card">
+                <div class="card-number">03 / INSTANCE</div>
+                <div class="card-title">Quant Team at Reya</div>
+                <div class="card-description">A concrete implementation. Three roles, filesystem map, routing topology, access matrix, and protection rules.</div>
+                <a href="../instances/quant_team_architecture_visual.html" class="card-link">View →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        Active development · 2026
+    </footer>
+</body>
+</html>
