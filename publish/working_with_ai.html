@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Working with AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --green: #00b36b;
+    --green-faint: rgba(0, 179, 107, 0.06);
+    --bg: #0a0a0a;
+    --bg-alt: #0c0c0c;
+    --border: #151515;
+    --text-bright: #f0f0f0;
+    --text-mid: #aaa;
+    --text-body: #777;
+    --text-dim: #555;
+    --text-faint: #333;
+    --purple: #9966cc;
+    --amber: #b38600;
+    --teal: #14b8a6;
+    --red: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #000;
+    color: var(--text-bright);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Viewport scaling — fixed 1280×720 canvas */
+  .deck {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 1280px;
+    height: 720px;
+    transform-origin: center center;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1280px;
+    height: 720px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Typography */
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .heading-lg {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 38px;
+    font-weight: 600;
+    color: var(--text-bright);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+  }
+  .heading-lg em { color: var(--green); font-style: normal; }
+
+  .heading-md {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  .heading-md em { color: var(--green); font-style: normal; }
+
+  .body-text {
+    font-size: 16px;
+    color: var(--text-body);
+    line-height: 1.7;
+  }
+  .body-text + .body-text { margin-top: 14px; }
+
+  .kicker {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-dim);
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .left-note {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-top: 12px;
+  }
+
+  .sep {
+    width: 36px; height: 1px;
+    background: var(--green);
+    opacity: 0.4;
+    margin: 16px 0;
+  }
+
+  /* Statement slide */
+  .g-statement {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 1280px;
+    height: 720px;
+  }
+  .g-statement > .col-l {
+    padding: 120px 56px 120px 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+  }
+  .g-statement > .col-r {
+    padding: 120px 140px 120px 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Content slide — 280px left */
+  .g-content {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    width: 1280px;
+    height: 720px;
+  }
+  .g-content > .col-l {
+    padding: 100px 36px 100px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--bg-alt), var(--bg));
+  }
+  .g-content > .col-r {
+    padding: 100px 120px 100px 52px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+  }
+
+  /* Items */
+  .item { padding: 13px 0; }
+  .item:first-child { padding-top: 0; }
+  .item:last-child { padding-bottom: 0; }
+  .item + .item { border-top: 1px solid var(--border); }
+  .item-header {
+    display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;
+  }
+  .item-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--green); font-weight: 500;
+  }
+  .item-title {
+    font-size: 16px; font-weight: 600; color: #ddd;
+  }
+  .item-body {
+    font-size: 14px; color: var(--text-body); line-height: 1.65;
+    padding-left: 28px;
+  }
+  .item-body em {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-style: italic;
+    color: var(--text-mid);
+  }
+
+  /* Conclusion callout inside content slides */
+  .conclusion {
+    margin-top: 16px;
+    padding: 16px 18px;
+    background: var(--green-faint);
+    border-left: 2px solid var(--green);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #cfd6d2;
+  }
+  .conclusion .conclusion-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    margin-bottom: 6px;
+    font-style: normal;
+    text-transform: uppercase;
+  }
+
+  /* Session steps */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-top: 14px;
+  }
+  .step {
+    padding: 22px;
+    background: var(--bg);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--green);
+  }
+  .step-title { font-size: 15px; font-weight: 600; color: #ddd; }
+  .step-body { font-size: 13px; color: var(--text-body); line-height: 1.55; }
+
+  /* Two-column layered comparison (project vs team) */
+  .layers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    margin-top: 10px;
+  }
+  .layer {
+    padding: 22px 22px 24px;
+    background: var(--bg);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .layer-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .layer.unlock { background: var(--green-faint); }
+  .layer.unlock .layer-tag { color: var(--green); }
+  .layer-title { font-size: 18px; font-weight: 700; color: var(--text-bright); }
+  .layer-body { font-size: 13px; color: var(--text-body); line-height: 1.6; }
+  .layer-foot {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Title slide */
+  .slide-title-inner {
+    width: 1280px;
+    height: 720px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 140px;
+    position: relative;
+  }
+  .slide-title-inner .brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 500;
+    color: var(--green);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 28px; opacity: 0.7;
+  }
+  .slide-title-inner h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 64px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+  .slide-title-inner .t-sub {
+    font-size: 18px; color: var(--text-dim); line-height: 1.5;
+  }
+  .slide-title-inner .t-rule {
+    width: 48px; height: 2px;
+    background: var(--green); opacity: 0.35;
+    position: absolute;
+    bottom: 96px; left: 140px;
+  }
+  .slide-title-inner .t-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.05em;
+    position: absolute;
+    bottom: 96px; right: 140px;
+  }
+
+  /* Section divider slide */
+  .slide-divider {
+    width: 1280px;
+    height: 720px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 140px;
+    position: relative;
+  }
+  .slide-divider .d-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--green);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .slide-divider .d-title {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 52px;
+    font-weight: 600;
+    color: var(--text-bright);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    max-width: 800px;
+  }
+  .slide-divider .d-title em { color: var(--green); font-style: normal; }
+  .slide-divider .d-sub {
+    font-size: 17px; color: var(--text-dim);
+    margin-top: 22px;
+    max-width: 720px;
+    line-height: 1.6;
+  }
+  .slide-divider .d-rule {
+    width: 48px; height: 2px;
+    background: var(--green); opacity: 0.35;
+    margin-top: 36px;
+  }
+
+  /* Problem-conclusion list (for "putting four together") */
+  .conclusions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 10px;
+  }
+  .conclusions-list .c-row {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 12px;
+    align-items: baseline;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .conclusions-list .c-row:last-child { border-bottom: none; }
+  .conclusions-list .c-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 600;
+  }
+  .conclusions-list .c-text {
+    font-size: 16px;
+    color: #d8d8d8;
+    line-height: 1.5;
+  }
+  .conclusions-list .c-text em {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-style: italic;
+    color: var(--green);
+  }
+
+  /* Nav */
+  .nav {
+    position: fixed;
+    bottom: 20px; right: 32px;
+    display: flex; align-items: center; gap: 7px;
+    z-index: 100;
+  }
+  .nav-counter {
+    font-size: 11px; color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .nav-dot {
+    width: 5px; height: 5px;
+    background: #1a1a1a; cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+  }
+  .nav-dot.active {
+    background: var(--green);
+    transform: scale(1.5);
+  }
+  .progress-bar {
+    position: fixed;
+    top: 48px; left: 0;
+    height: 2px;
+    background: var(--green);
+    transition: width 0.4s ease;
+    z-index: 100; opacity: 0.45;
+  }
+
+  /* Site nav */
+  .site-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 48px;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+  }
+  .site-nav-inner {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .site-nav-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--green);
+    letter-spacing: 0.15em;
+    text-decoration: none;
+  }
+  .site-nav-brand:hover { opacity: 0.8; }
+  .site-nav-links {
+    display: flex;
+    gap: 28px;
+  }
+  .site-nav-links a {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .site-nav-links a:hover { color: var(--text-mid); }
+  .site-nav-links a.active { color: var(--green); }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="site-nav-brand">AI TEAM</a>
+    <div class="site-nav-links">
+      <a href="working_with_ai.html" class="active">Working with AI</a>
+      <a href="ai_team_architecture.html">Overview</a>
+      <a href="ai_team_architecture_reference.html">Reference</a>
+      <a href="../instances/quant_team_architecture_visual.html">Quant Team</a>
+    </div>
+  </div>
+</nav>
+
+<div class="progress-bar" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- ============================================================
+       OPENING
+       ============================================================ -->
+
+  <!-- SLIDE 1 — TITLE -->
+  <div class="slide active" data-slide="0">
+    <div class="slide-title-inner">
+      <div class="brand">An introduction</div>
+      <h1>Working<br>with AI</h1>
+      <div class="t-sub">From prompts to context engineering.<br>Four problems anyone serious about AI has felt — and the system that falls out of taking them together.</div>
+      <div class="t-rule"></div>
+      <div class="t-meta">Artur Ferreira de Araujo · 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 — THE WALL (heading) + DILEMMA (body) MERGED -->
+  <div class="slide" data-slide="1">
+    <div class="g-statement">
+      <div class="col-l">
+        <div class="section-num">01 / THE OPENING</div>
+        <div class="heading-lg">Most people using AI seriously hit <em>the same wall</em>.</div>
+      </div>
+      <div class="col-r">
+        <div class="body-text">Stay in one long session and precision decays as the context fills with noise.</div>
+        <div class="body-text">Split into separate sessions and the AI remembers none of what came before. Re-explaining each time is slow. Pasting yesterday's chat brings the bloat right back.</div>
+        <div class="kicker">These two failure modes are what you swing between when you think in prompts. Neither side of the swing is solved by better prompts.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 — THE REFRAME -->
+  <div class="slide" data-slide="2">
+    <div class="g-statement">
+      <div class="col-l">
+        <div class="section-num">02 / THE REFRAME</div>
+        <div class="heading-lg">Stop tuning prompts. Start engineering <em>context</em>.</div>
+      </div>
+      <div class="col-r">
+        <div class="body-text">A prompt is what you send into a single turn. Context engineering is managing what the AI sees — across turns and across sessions — deliberately.</div>
+        <div class="body-text">The artifact you maintain is the context, not any individual prompt. Files hold that context in distilled form: the conclusions of yesterday's work, not the transcript of how it was reached.</div>
+        <div class="kicker">What follows: four problems you've already felt, each pointing at a conclusion. Then the system that falls out when you take all four together.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PART 1 — FOUR PROBLEMS
+       ============================================================ -->
+
+  <!-- SLIDE 4 — DIVIDER PART 1 -->
+  <div class="slide" data-slide="3">
+    <div class="slide-divider">
+      <div class="d-label">Part 1</div>
+      <div class="d-title">Four problems you've <em>already felt</em>.</div>
+      <div class="d-sub">Each one is a wall you hit on your own as soon as you try to do real work with AI. Each one points at a conclusion. Taken together, they describe a system.</div>
+      <div class="d-rule"></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 — PROBLEM 1: ASYMMETRIC CORRECTION COST -->
+  <div class="slide" data-slide="4">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">03 / PROBLEM 1</div>
+        <div class="heading-md">Correction cost is <em>asymmetric</em></div>
+        <div class="left-note">Ambiguity caught before implementation costs a sentence. Caught after, it costs a debugging cycle that's hard to escape.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num">Before</span><span class="item-title">A sentence in conversation</span></div>
+          <div class="item-body">"Should this handle the edge case where X happens?" gets answered in a beat. The implementation that follows is targeted at the right thing from the start.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num" style="color: var(--red);">After</span><span class="item-title">A debugging loop you can't escape</span></div>
+          <div class="item-body">The AI's interpretation lives in its context. You correct one piece; it patches around the existing implementation. You explain more clearly; it produces another variant close to the wrong version. The context that was supposed to help is now anchoring the wrong premise — and every cycle burns tokens.</div>
+        </div>
+        <div class="conclusion">
+          <div class="conclusion-label">Conclusion 1</div>
+          Align and plan <em>before</em> executing. Time up front isn't a delay before the real work — it's the cheapest place to surface what would otherwise become expensive.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 — PROBLEM 2: TACIT CONTEXT -->
+  <div class="slide" data-slide="5">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">04 / PROBLEM 2</div>
+        <div class="heading-md">The relevant context is mostly <em>tacit</em></div>
+        <div class="left-note">Writing a spec without the conversation gives you the original request in document form — same gaps, same unspoken assumptions.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num">Why</span><span class="item-title">The constraints that matter aren't written down</span></div>
+          <div class="item-body">They're held by the person who knows the legacy system, who's seen this edge case before, who remembers why the previous approach was rejected. Not hidden — just unarticulated, often until the right question is asked.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">How</span><span class="item-title">Alignment is the conversation that surfaces it</span></div>
+          <div class="item-body">The AI asks questions that pull tacit constraints into the open. You answer, and in answering you discover things about your own intent that weren't clear when you started. Edge cases come up. Trade-offs become visible. The conversation does real cognitive work — yours, not the AI's.</div>
+        </div>
+        <div class="conclusion">
+          <div class="conclusion-label">Conclusion 2</div>
+          Align in conversation; capture in specs. The spec is the <em>output</em> of an important process, not the input to one.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 — PROBLEM 3: SESSIONS START FROM ZERO -->
+  <div class="slide" data-slide="6">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">05 / PROBLEM 3</div>
+        <div class="heading-md">Every session <em>starts from zero</em></div>
+        <div class="left-note">You did the alignment work well. You have a sharp spec. The next session opens and the AI doesn't remember any of it.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num">Trap</span><span class="item-title">Two workarounds, both bad</span></div>
+          <div class="item-body">Re-explaining the spec from scratch each session is slow and imprecise. Pasting yesterday's chat back in skips the re-explanation but brings the bloat right back.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">Way out</span><span class="item-title">Files hold the digested form of what came before</span></div>
+          <div class="item-body">The spec, the resolved questions, the assumptions surfaced during alignment, the conclusions of yesterday's session. Short relative to the conversations that produced them, because they hold conclusions rather than reasoning paths. They can be loaded selectively, so each session's context contains exactly what's relevant — and not what isn't.</div>
+        </div>
+        <div class="conclusion">
+          <div class="conclusion-label">Conclusion 3</div>
+          Context must persist through <em>files</em>, not chat history. The unit of memory across sessions is the digested artifact, not the transcript.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 — PROBLEM 4: ONE COGNITIVE MODE -->
+  <div class="slide" data-slide="7">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">06 / PROBLEM 4</div>
+        <div class="heading-md">The context window is the AI's cognitive mode — <em>and it only has one</em></div>
+        <div class="left-note">More context isn't always better. Sometimes it's what makes the AI worse.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num">Example</span><span class="item-title">The author cannot be the reviewer</span></div>
+          <div class="item-body">The session that did the work has, by definition, the context that produced the work. Every assumption is already loaded. The missing case won't surface — because the missing case isn't in the context.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">Why</span><span class="item-title">Whatever's in the context shapes how it reasons</span></div>
+          <div class="item-body">A human reviewer can — with effort — hold their own draft at arm's length. An AI cannot. There is no other gear. Cold review requires a <em>different session</em> with a <em>different context</em>: one that doesn't include the reasoning that produced the artifact under review.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">More</span><span class="item-title">The same principle is wider than review</span></div>
+          <div class="item-body">Research vs. development. Planning vs. execution. Each mode is <em>sharper</em> when its context is built for it — uncluttered by what doesn't help it.</div>
+        </div>
+        <div class="conclusion">
+          <div class="conclusion-label">Conclusion 4</div>
+          Separate roles for different cognitive modes. Not bureaucracy — the only way to get cold eyes once you're working with AI.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 — PUTTING THE FOUR TOGETHER -->
+  <div class="slide" data-slide="8">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">07 / TOGETHER</div>
+        <div class="heading-md">Putting the four <em>together</em></div>
+        <div class="left-note">These aren't independent recommendations. They sit on top of each other — and a shape falls out.</div>
+      </div>
+      <div class="col-r">
+        <div class="conclusions-list">
+          <div class="c-row">
+            <div class="c-num">01</div>
+            <div class="c-text">Align and plan <em>before</em> executing.</div>
+          </div>
+          <div class="c-row">
+            <div class="c-num">02</div>
+            <div class="c-text">Align in <em>conversation</em>; capture in specs.</div>
+          </div>
+          <div class="c-row">
+            <div class="c-num">03</div>
+            <div class="c-text">Persist context in <em>files</em>.</div>
+          </div>
+          <div class="c-row">
+            <div class="c-num">04</div>
+            <div class="c-text">Separate <em>roles</em> for different cognitive modes.</div>
+          </div>
+        </div>
+        <div class="conclusion" style="margin-top: 22px;">
+          <div class="conclusion-label">The shape</div>
+          Work happens in defined sessions. Each session starts with alignment and ends with files. The files become the next session's starting point. When work crosses cognitive modes, it crosses through files — not through conversations.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PART 2 — THE SYSTEM
+       ============================================================ -->
+
+  <!-- SLIDE 10 — DIVIDER PART 2 -->
+  <div class="slide" data-slide="9">
+    <div class="slide-divider">
+      <div class="d-label">Part 2</div>
+      <div class="d-title">The system that <em>falls out</em>.</div>
+      <div class="d-sub">Nothing in it is invented. Every piece follows from one of the four problems. Naming the pieces is what comes next.</div>
+      <div class="d-rule"></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11 — FILES AS SUBSTRATE -->
+  <div class="slide" data-slide="10">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">08 / FILES</div>
+        <div class="heading-md">Files are the <em>substrate</em>, not records</div>
+        <div class="left-note">Not a record of what the AI produced. The working medium the AI thinks through.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num">01</span><span class="item-title">Role definitions</span></div>
+          <div class="item-body">Describe a cognitive mode — what this role thinks about, what it doesn't see, what its outputs look like.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">02</span><span class="item-title">Knowledge files</span></div>
+          <div class="item-body">Patterns, conventions, and recurring questions that any session of a given kind should benefit from. General and reusable. They accumulate over time and compound across projects, shaping how a role operates.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">03</span><span class="item-title">Alignment artifacts</span></div>
+          <div class="item-body">Specs, design docs, decision records. The digested output of an alignment conversation about a particular task. Work-specific — they come and go with the work they document.</div>
+        </div>
+        <div class="kicker" style="padding-left: 0;">A session begins by reading the relevant files. It ends by updating them. The files are what carries forward — not the chat history of how they came to be.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12 — SESSION SHAPE -->
+  <div class="slide" data-slide="11">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">09 / SESSIONS</div>
+        <div class="heading-md">Sessions have shape: <em>Align → Work → Capture</em></div>
+        <div class="left-note">Three beats. The third is the one most often skipped — and it's the most consequential.</div>
+      </div>
+      <div class="col-r">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">Align</div>
+            <div class="step-title">Surface tacit knowledge</div>
+            <div class="step-body">Find the questions, agree on the approach. The conversation that pulls constraints into the open.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">Work</div>
+            <div class="step-title">Do the substantive thing</div>
+            <div class="step-body">Refine a plan, implement against a spec, explore a question, review an artifact. Often a separate session from alignment, with a file between them.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">Capture</div>
+            <div class="step-title">Write back what's new</div>
+            <div class="step-body">The spec, the knowledge note, the decision record, the updated state. The beat that makes the next session start further along — instead of from zero.</div>
+          </div>
+        </div>
+        <div style="font-family: 'Source Serif 4', Georgia, serif; font-size: 14px; font-style: italic; color: var(--text-dim); margin-top: 22px;">A session that doesn't capture is a session that has to be partly re-done.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13 — TWO CONTEXT LAYERS -->
+  <div class="slide" data-slide="12">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">10 / LAYERS</div>
+        <div class="heading-md">Two layers — the team layer is the <em>unlock</em></div>
+        <div class="left-note">Both are necessary. People come to AI with project-level habits and skip the team layer entirely. That's the layer where investment compounds most steeply.</div>
+      </div>
+      <div class="col-r">
+        <div class="layers">
+          <div class="layer">
+            <div class="layer-tag">Project layer</div>
+            <div class="layer-title">What this thing is</div>
+            <div class="layer-body">Codebase, data, constraints specific to this domain, conventions in this project. The layer people reach for first — that's where the actual work happens.</div>
+            <div class="layer-foot">Compounds within a project.</div>
+          </div>
+          <div class="layer unlock">
+            <div class="layer-tag">Team layer</div>
+            <div class="layer-title">How you and your team work</div>
+            <div class="layer-body">Analytical defaults, writing register, who reviews what, feedback protocol, the patterns you apply across all your work, what you've learned about how AI helps you best.</div>
+            <div class="layer-foot">Compounds across your working life.</div>
+          </div>
+        </div>
+        <div class="conclusion" style="margin-top: 22px;">
+          <div class="conclusion-label">Why it's the unlock</div>
+          Project docs don't naturally have a home for "how you work." Without the team layer, the AI can read your code but doesn't know how you reason, what your defaults are, when to ask vs. proceed. One hour spent sharpening the team context affects every future session, every project, every role.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 14 — ROLE SEPARATION -->
+  <div class="slide" data-slide="13">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">11 / ROLES</div>
+        <div class="heading-md">Role separation as <em>context specialization</em></div>
+        <div class="left-note">A minimum split: one role that plans and aligns, one that executes, one that reviews. Each a separate session, with its own context.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num">01</span><span class="item-title">Separation is specialization, not just adversarial</span></div>
+          <div class="item-body">A planning context can hold questions, alternatives, trade-offs. An execution context can hold the decided plan and the code. A review context can hold the artifact and the criteria, without the reasoning that produced it. Each role's context is sharper because it isn't asked to do every job at once.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">02</span><span class="item-title">Separation is about access, not just instructions</span></div>
+          <div class="item-body">Telling a single AI session "now act as a reviewer" doesn't get you cold review — the context still contains the implementation reasoning. Cold review requires a <em>different session</em> loaded with a <em>different set of files</em>. Small but consequential, and easy to underestimate.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PART 3 — WHAT CHANGES
+       ============================================================ -->
+
+  <!-- SLIDE 15 — DIVIDER PART 3 -->
+  <div class="slide" data-slide="14">
+    <div class="slide-divider">
+      <div class="d-label">Part 3</div>
+      <div class="d-title">What changes <em>in how you work</em>.</div>
+      <div class="d-sub">Step back from the specific problems. With the system in place, the shape of the change is bigger than any single piece.</div>
+      <div class="d-rule"></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16 — FOUR CHANGES -->
+  <div class="slide" data-slide="15">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">12 / CHANGES</div>
+        <div class="heading-md">Four changes</div>
+        <div class="left-note">The version of "AI augments you" that actually happens in practice.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num">01</span><span class="item-title">Your time shifts to where your contribution matters</span></div>
+          <div class="item-body">The expensive part — debugging-and-steering after AI has committed to the wrong interpretation — largely disappears. The cheap, high-leverage part — alignment, where your judgment matters — gets the most attention.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">02</span><span class="item-title">The work compounds</span></div>
+          <div class="item-body">A team context that captures how you think becomes more useful with every refinement, and carries across every project. Knowledge files accumulate. The substrate gets denser. Sessions start further along. Alignment conversations get shorter because the recurring questions are already answered.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">03</span><span class="item-title">You stop fighting the AI's grain</span></div>
+          <div class="item-body">You're not asking it to context-switch, review its own work, infer tacit knowledge from a sparse request, or carry memory without a substrate. Each is something AI is structurally bad at. Friction drops because the system matches how AI actually works.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">04</span><span class="item-title">You can delegate more confidently</span></div>
+          <div class="item-body">Role separation gives you structural cold eyes. AI can execute against a clear spec knowing a separately-contexted review will catch what slipped through. Trust is grounded in the structure of the system, not in hoping AI got it right.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 17 — COMPOSABLE EXTENSIONS -->
+  <div class="slide" data-slide="16">
+    <div class="g-content">
+      <div class="col-l">
+        <div class="section-num">13 / EXTENSIONS</div>
+        <div class="heading-md">Once it's in place, more becomes <em>composable</em></div>
+        <div class="left-note">Not new ideas — continuations. The substrate makes the rest possible. Without sessions and files and clear roles, none of this layering works.</div>
+      </div>
+      <div class="col-r">
+        <div class="item">
+          <div class="item-header"><span class="item-num" style="color: var(--amber);">01</span><span class="item-title">A ledger of where work stands</span></div>
+          <div class="item-body">A small additional file that tracks what's done, what's blocked, what's next, what was decided and why. Turns the substrate from passive storage into evolving state. A new session reads the ledger first and orients in seconds.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num" style="color: var(--teal);">02</span><span class="item-title">Hygiene scripts</span></div>
+          <div class="item-body">Once your work runs on a substrate with a clear shape, agents can help maintain it: checking the ledger is consistent, distilling scattered notes, verifying role definitions match expectations.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num" style="color: var(--purple);">03</span><span class="item-title">Version control integration</span></div>
+          <div class="item-body">A session has natural boundaries — alignment artifact, implementation, capture — that map closely to commits and PRs. A workstream maps to a branch. Alignment artifacts make natural PR descriptions.</div>
+        </div>
+        <div class="item">
+          <div class="item-header"><span class="item-num">04</span><span class="item-title">Project and ticket integration</span></div>
+          <div class="item-body">Workstreams correspond to tickets. The ledger is where the <em>real</em> status of work lives — more accurate than the ticket tool, because it's updated by the work itself. Tying the two together means the project board reflects reality.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CLOSE
+       ============================================================ -->
+
+  <!-- SLIDE 18 — CLOSE -->
+  <div class="slide" data-slide="17">
+    <div class="g-statement">
+      <div class="col-l">
+        <div class="section-num">14 / CLOSE</div>
+        <div class="heading-lg">The shift isn't being better at prompting. It's <em>doing the structural work upfront</em>.</div>
+      </div>
+      <div class="col-r">
+        <div class="body-text">Surface what you know. Persist it in files. Separate cognitive modes. So the AI has somewhere to think — and so do you.</div>
+        <div class="body-text">Every piece of the system follows from a problem you've already felt. Nothing is invented; it's recognized. The argument is that the recognition is enough, once the problems are named.</div>
+        <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border);">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; margin-bottom: 14px;">GOING DEEPER</div>
+          <div style="margin-bottom: 10px;">
+            <a href="ai_team_architecture.html" style="font-size: 15px; font-weight: 600; color: var(--green); text-decoration: none;">AI Team Architecture</a>
+            <span style="font-size: 13px; color: var(--text-dim); margin-left: 10px;">The coordination model in 17 slides</span>
+          </div>
+          <div>
+            <a href="ai_team_architecture_reference.html" style="font-size: 15px; font-weight: 600; color: var(--green); text-decoration: none;">Reference document</a>
+            <span style="font-size: 13px; color: var(--text-dim); margin-left: 10px;">Full framework and worked example</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav -->
+<div class="nav" id="nav"></div>
+
+<script>
+  /* Viewport scaling */
+  const SLIDE_W = 1280;
+  const SLIDE_H = 720;
+  const deck = document.getElementById('deck');
+
+  function scaleDeck() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const scale = Math.min(w / SLIDE_W, h / SLIDE_H);
+    deck.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+  }
+
+  window.addEventListener('resize', scaleDeck);
+  scaleDeck();
+
+  /* Slide navigation */
+  const slides = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  const nav = document.getElementById('nav');
+  let current = 0;
+
+  const counter = document.createElement('span');
+  counter.className = 'nav-counter';
+  nav.appendChild(counter);
+
+  slides.forEach(function(_, i) {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', function() { goTo(i); });
+    nav.appendChild(dot);
+  });
+
+  function goTo(n) {
+    if (n < 0 || n >= slides.length) return;
+    slides[current].classList.remove('active');
+    nav.querySelectorAll('.nav-dot')[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    nav.querySelectorAll('.nav-dot')[current].classList.add('active');
+    progress.style.width = ((current / (slides.length - 1)) * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  goTo(0);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goTo(current - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    else if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1); }
+  });
+
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+  });
+</script>
+
+</body>
+</html>
